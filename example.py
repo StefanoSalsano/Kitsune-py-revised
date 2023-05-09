@@ -54,7 +54,6 @@ while True:
     RMSEs.append(rmse)
 stop = time.time()
 print("Complete ok. Time elapsed: "+ str(stop - start))
-#print(collector)
 
 import pandas as pd
 df = pd.DataFrame(collector)
