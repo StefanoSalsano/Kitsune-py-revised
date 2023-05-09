@@ -72,9 +72,9 @@ class netStat:
 
     def updateGetStats(self, IPtype, srcMAC,dstMAC, srcIP, srcProtocol, dstIP, dstProtocol, datagramSize, timestamp):
         # Host BW: Stats on the srcIP's general Sender Statistics
-        # Hstat = np.zeros((3*len(self.Lambdas,)))
-        # for i in range(len(self.Lambdas)):
-        #     Hstat[(i*3):((i+1)*3)] = self.HT_H.update_get_1D_Stats(srcIP, timestamp, datagramSize, self.Lambdas[i])
+        Hstat = np.zeros((3*len(self.Lambdas,)))
+        for i in range(len(self.Lambdas)):
+            Hstat[(i*3):((i+1)*3)] = self.HT_H.update_get_1D_Stats(srcIP, timestamp, datagramSize, self.Lambdas[i])
 
         #MAC.IP: Stats on src MAC-IP relationships
         MIstat =  np.zeros((3*len(self.Lambdas,)))
@@ -100,7 +100,7 @@ class netStat:
             for i in range(len(self.Lambdas)):
                 HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP + srcProtocol, dstIP + dstProtocol, timestamp, datagramSize, self.Lambdas[i])
 
-        return np.concatenate((MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
+        return np.concatenate((Hstat,MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
 
     def getNetStatHeaders(self):
         MIstat_headers = []
@@ -110,6 +110,7 @@ class netStat:
         HpHpstat_headers = []
 
         for i in range(len(self.Lambdas)):
+            Hstat_headers += ["H_dir_"+h for h in self.HT_H.getHeaders_1D(Lambda=self.Lambdas[i],ID=None)]
             MIstat_headers += ["MI_dir_"+h for h in self.HT_MI.getHeaders_1D(Lambda=self.Lambdas[i],ID=None)]
             HHstat_headers += ["HH_"+h for h in self.HT_H.getHeaders_1D2D(Lambda=self.Lambdas[i],IDs=None,ver=2)]
             HHjitstat_headers += ["HH_jit_"+h for h in self.HT_jit.getHeaders_1D(Lambda=self.Lambdas[i],ID=None)]

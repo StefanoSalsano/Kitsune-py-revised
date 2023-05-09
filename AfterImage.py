@@ -388,8 +388,9 @@ class incStatDB:
 
     # Updates and then pulls current 1D and 2D stats from the given IDs. Automatically registers previously unknown stream IDs
     def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1):  # weight, mean, std
-        return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
-
+        #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        return self.update_get_1D_Stats(ID1+ID2,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+    
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?
         Lambda = self.get_lambda(Lambda)
@@ -439,4 +440,3 @@ class incStatDB:
             elif W > cutoffWeight:
                 break
         return n
-
