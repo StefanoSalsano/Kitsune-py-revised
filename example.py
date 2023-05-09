@@ -1,6 +1,7 @@
 from Kitsune import Kitsune
 import numpy as np
 import time
+import sys
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -15,14 +16,16 @@ import time
 
 # Load Mirai pcap (a recording of the Mirai botnet malware being activated)
 # The first 70,000 observations are clean...
-print("Unzipping Sample Capture...")
-import zipfile
-with zipfile.ZipFile("mirai.zip","r") as zip_ref:
-    zip_ref.extractall()
+#print("Unzipping Sample Capture...")
+#import zipfile
+#with zipfile.ZipFile("mirai.zip","r") as zip_ref:
+#    zip_ref.extractall()
 
 
 # File location
-path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
+#path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
+path = "mirai200.pcap" #the pcap, pcapng, or tsv file to process.
+
 packet_limit = np.Inf #the number of packets to process
 
 # KitNET params:
@@ -34,6 +37,8 @@ ADgrace = 50000 #the number of instances used to train the anomaly detector (ens
 K = Kitsune(path,packet_limit,maxAE,FMgrace,ADgrace)
 
 print("Running Kitsune:")
+
+collector = []
 RMSEs = []
 i = 0
 start = time.time()
@@ -43,13 +48,20 @@ while True:
     i+=1
     if i % 1000 == 0:
         print(i)
-    rmse = K.proc_next_packet()
+    rmse = K.proc_next_packet(collector)
     if rmse == -1:
         break
     RMSEs.append(rmse)
 stop = time.time()
-print("Complete. Time elapsed: "+ str(stop - start))
+print("Complete ok. Time elapsed: "+ str(stop - start))
+#print(collector)
 
+import pandas as pd
+df = pd.DataFrame(collector)
+print (df)
+df.to_csv('output.csv')
+
+sys.exit()
 
 # Here we demonstrate how one can fit the RMSE scores to a log-normal distribution (useful for finding/setting a cutoff threshold \phi)
 from scipy.stats import norm

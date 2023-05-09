@@ -29,14 +29,15 @@ class Kitsune:
         self.FE = FE(file_path,limit)
 
         #init Kitnet
+        print ('Num of features:',self.FE.get_num_features())
         self.AnomDetector = KitNET(self.FE.get_num_features(),max_autoencoder_size,FM_grace_period,AD_grace_period,learning_rate,hidden_ratio)
 
-    def proc_next_packet(self):
+    def proc_next_packet(self,collector):
         # create feature vector
         x = self.FE.get_next_vector()
+        collector.append(x)
         if len(x) == 0:
             return -1 #Error or no packets left
 
         # process KitNET
         return self.AnomDetector.process(x)  # will train during the grace periods, then execute on all the rest.
-
