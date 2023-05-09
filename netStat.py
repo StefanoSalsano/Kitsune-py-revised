@@ -100,7 +100,7 @@ class netStat:
             for i in range(len(self.Lambdas)):
                 HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP + srcProtocol, dstIP + dstProtocol, timestamp, datagramSize, self.Lambdas[i])
 
-        return np.concatenate((Hstat,MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
+        return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
 
     def getNetStatHeaders(self):
         MIstat_headers = []
