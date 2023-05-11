@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import state
 
 
 class incStat:
@@ -15,6 +16,7 @@ class incStat:
         self.cur_var = np.nan
         self.cur_std = np.nan
         self.covs = [] # a list of incStat_covs (references) with relate to this incStat
+        self.state = state.create()
 
     def insert(self, v, t=0):  # v is a scalar, t is v's arrival the timestamp
         if self.isTypeDiff:
@@ -23,12 +25,17 @@ class incStat:
                 v = dif
             else:
                 v = 0
+        
+        # includes process decay
+        state.update(self.state, v, t, self.Lambda)
+
         self.processDecay(t)
 
         # update with v
         self.CF1 += v
         self.CF2 += math.pow(v, 2)
         self.w += 1
+        print ('compare w',self.w, self.state['all'][0])
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
@@ -36,17 +43,20 @@ class incStat:
         # update covs (if any)
         for cov in self.covs:
             cov.update_cov(self.ID, v, t)
+            state.update2D(cov.state2D,v,t,self.Lambda)
 
     def processDecay(self, timestamp):
         factor=1
         # check for decay
         timeDiff = timestamp - self.lastTimestamp
         if timeDiff > 0:
-            factor = math.pow(2, (-self.Lambda * timeDiff))
+            factor = math.pow(2, (-self.Lambda * timeDiff)) #wrong IMHO
+            #factor = math.exp(-(timeDiff)*self.Lambda) 
             self.CF1 = self.CF1 * factor
             self.CF2 = self.CF2 * factor
             self.w = self.w * factor
             self.lastTimestamp = timestamp
+        #print ('factor',factor)
         return factor
 
     def weight(self):
@@ -143,7 +153,7 @@ class incStat:
 #like incStat, but maintains stats between two streams
 class incStat_cov:
     def __init__(self, incS1, incS2, init_time = 0):
-        # store references tot he streams' incStats
+        # store references to the streams' incStats
         self.incStats = [incS1,incS2]
         self.lastRes = [0,0]
         # init extrapolators
@@ -153,6 +163,8 @@ class incStat_cov:
         self.CF3 = 0 # sum of residule products (A-uA)(B-uB)
         self.w3 = 1e-20
         self.lastTimestamp_cf3 = init_time
+
+        self.state2D = state.create2D(incS1.state,incS2.state)
 
     #other_incS_decay is the decay factor of the other incstat
     # ID: the stream ID which produced (v,t)
@@ -251,7 +263,8 @@ class incStat_cov:
 class incStatDB:
     # default_lambda: use this as the lambda for all streams. If not specified, then you must supply a Lambda with every query.
     def __init__(self,limit=np.Inf,default_lambda=np.nan):
-        self.HT = dict()
+        self.HT = dict() #it is a map with all the statistics, indexed by source+lambda
+        self.HT_approx = dict()
         self.limit = limit
         self.df_lambda = default_lambda
 

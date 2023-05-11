@@ -1,6 +1,7 @@
 #Check if cython code has been compiled
 import os
 import subprocess
+import sys
 
 use_extrapolation=False #experimental correlation code
 if use_extrapolation:
@@ -18,7 +19,6 @@ import os.path
 import platform
 import subprocess
 
-
 #Extracts Kitsune features from given pcap file one packet at a time using "get_next_vector()"
 # If wireshark is installed (tshark) it is used to parse (it's faster), otherwise, scapy is used (much slower).
 # If wireshark is used then a tsv file (parsed version of the pcap) will be made -which you can use as your input next time
@@ -30,6 +30,7 @@ class FE:
         self.curPacketIndx = 0
         self.tsvin = None #used for parsing TSV file
         self.scapyin = None #used for parsing pcap with scapy
+        self.counter = 0
 
         ### Prep pcap ##
         self.__prep__()
@@ -195,7 +196,11 @@ class FE:
             return []
 
         self.curPacketIndx = self.curPacketIndx + 1
+        #print(timestamp)
 
+        self.counter = self.counter + 1
+        if self.counter > 5 :
+            sys.exit()
 
         ### Extract Features
         try:
