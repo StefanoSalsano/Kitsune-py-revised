@@ -5,7 +5,7 @@ import state
 
 class incStat:
     def __init__(self, Lambda, ID, init_time=0, isTypeDiff=False):  # timestamp is creation time
-        self.ID = ID
+        self.ID = 'jitter'+ID if isTypeDiff else ID
         self.CF1 = 0  # linear sum
         self.CF2 = 0  # sum of squares
         self.w = 1e-20  # weight
@@ -16,7 +16,7 @@ class incStat:
         self.cur_var = np.nan
         self.cur_std = np.nan
         self.covs = [] # a list of incStat_covs (references) with relate to this incStat
-        self.state = state.create()
+        #TODO-delete self.state = state.create()
 
     def insert(self, v, t=0):  # v is a scalar, t is v's arrival the timestamp
         if self.isTypeDiff:
@@ -26,8 +26,9 @@ class incStat:
             else:
                 v = 0
         
+
         # includes process decay
-        state.update(self.state, v, t, self.Lambda)
+        #TODO-delete state.update(self.state, v, t, self.Lambda)
 
         self.processDecay(t)
 
@@ -35,15 +36,17 @@ class incStat:
         self.CF1 += v
         self.CF2 += math.pow(v, 2)
         self.w += 1
-        print ('compare w',self.w, self.state['all'][0])
+        if (self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+            print ('ID',self.ID,'Lambda',self.Lambda,'compare w',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
 
         # update covs (if any)
         for cov in self.covs:
-            cov.update_cov(self.ID, v, t)
-            state.update2D(cov.state2D,v,t,self.Lambda)
+            pass
+            #cov.update_cov(self.ID, v, t)
+            #TODO-delete state.update2D(cov.state2D,v,t,self.Lambda)
 
     def processDecay(self, timestamp):
         factor=1
@@ -164,8 +167,6 @@ class incStat_cov:
         self.w3 = 1e-20
         self.lastTimestamp_cf3 = init_time
 
-        self.state2D = state.create2D(incS1.state,incS2.state)
-
     #other_incS_decay is the decay factor of the other incstat
     # ID: the stream ID which produced (v,t)
     def update_cov(self, ID, v, t):  # it is assumes that incStat "ID" has ALREADY been updated with (t,v) [this si performed automatically in method incStat.insert()]
@@ -190,12 +191,23 @@ class incStat_cov:
         # Extrapolate other stream
         #v_other = self.EXs[not(inc)].predict(t)
 
+        print ('self.incStats[0].ID',self.incStats[0].ID,'self.incStats[1].ID',self.incStats[1].ID,'XX ID',ID)
         # Compute and update residule
         res = (v - self.incStats[inc].mean())
         resid = (v - self.incStats[inc].mean()) * self.lastRes[not(inc)]
         self.CF3 += resid
         self.w3 += 1
         self.lastRes[inc] = res
+        myid1=self.incStats[not(inc)].ID
+        myid2=self.incStats[inc].ID
+        lower=state.order(myid1,myid2)
+        if lower==0 :
+            key = myid1+myid2
+        else :
+            key = myid2+myid1
+        if (self.w3 - state.map2D[key+'_'+str(self.incStats[1-lower].Lambda)]['all'][0]) > 0.0000001 :
+            print ('key',key,'Lambda',self.incStats[1-lower].Lambda,'compare w3',self.w3, state.map2D[key+'_'+str(self.incStats[1-lower].Lambda)]['all'][0] )
+
 
     def processDecay(self,t,micro_inc_indx):
         factor = 1
@@ -279,7 +291,7 @@ class incStatDB:
         Lambda = self.get_lambda(Lambda)
 
         #Retrieve incStat
-        key = ID+"_"+str(Lambda)
+        key = ('jitter'+ID if isTypeDiff else ID)+"_"+str(Lambda)
         incS = self.HT.get(key)
         if incS is None: #does not already exist
             if len(self.HT) + 1 > self.limit:
@@ -301,7 +313,7 @@ class incStatDB:
 
         #check for pre-exiting link
         for cov in incS1.covs:
-            if cov.incStats[0].ID == ID2 or cov.incStats[1].ID == ID2:
+            if (cov.incStats[0].ID == ID2 and cov.incStats[1].ID ==ID1) or (cov.incStats[1].ID == ID2 and cov.incStats[0].ID ==ID1) :
                 return cov #there is a pre-exiting link
 
         # Link incStats
@@ -383,15 +395,19 @@ class incStatDB:
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
     def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False):  # weight, mean, std
+        state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda,isTypeDiff)
         incS = self.update(ID,t,v,Lambda,isTypeDiff)
         return incS.allstats_1D()
 
 
     # Updates and then pulls current correlative stats between the given IDs. Automatically registers previously unknown stream IDs, and cov tracking
     #Note: AfterImage does not currently support Diff Type streams for correlational statistics.
-    def update_get_2D_Stats(self, ID1,ID2,t1,v1,Lambda=1,level=1):  #level=  1:cov,pcc  2:radius,magnitude,cov,pcc
+    def update_get_2D_Stats(self,ID1,ID2,t1,v1,Lambda=1,level=1):  #level=  1:cov,pcc  2:radius,magnitude,cov,pcc
+        state.update2D(ID1, ID2, v1, t1, Lambda)
         #retrieve/add cov tracker
+        print('register_cov',ID1,ID2)
         inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
+        
         # Update cov tracker
         inc_cov.update_cov(ID1,v1,t1)
         if level == 1:

@@ -30,6 +30,7 @@ def create() :
     state['all']=np.array([0,0,0])
     state['slot']=0
     state['approx']=np.array([0,0,0,0])
+    state['isTypeDiff']=False
     return (state)
 
 def create2D():
@@ -40,13 +41,24 @@ def create2D():
     return (state2D)
 
 #update_get_1D_Stats(srcIP, timestamp, datagramSize, Lambda)
-def update (ID1, x_cur, t_cur, Lambda=_lambda, return_mean=False) :
+def update (ID1, x_cur, t_cur, Lambda=_lambda, return_mean=False, isTypeDiff=False) :
+    if (ID1=='192.168.2.1192.168.2.108' and Lambda == 5) :
+        print ('here')
     state=dict()
-    if not ID1+str(Lambda) in map1D :
+    if not ID1+'_'+str(Lambda) in map1D :
         state = create()
-        map1D[ID1+str(Lambda)] = state
+        state['isTypeDiff']=isTypeDiff
+        map1D[ID1+'_'+str(Lambda)] = state
     else :
-        state = map1D[ID1+str(Lambda)]
+        state = map1D[ID1+'_'+str(Lambda)]
+
+    if state['isTypeDiff']:
+        dif = t_cur - state['time']
+        if dif > 0:
+            x_cur = dif
+        else:
+            x_cur = 0
+    
     #print((t_cur - state['time']) /1e9)
     #decay = math.exp(-(t_cur - state['time'])/1e9*Lambda) # time in [ns]
     decay = math.pow(2, (-(t_cur - state['time'])*Lambda)) #wrong IMHO
@@ -67,45 +79,42 @@ def update (ID1, x_cur, t_cur, Lambda=_lambda, return_mean=False) :
 #update_get_1D2D_Stats(srcIP, dstIP,timestamp,datagramSize,Lambda)
 
 def update2D(ID1, ID2, x_cur, t_cur, Lambda=_lambda):  
-    meanID1 = update(ID1, x_cur, t_cur, Lambda, return_mean=True)
-    update(ID2, 0, t_cur, Lambda)
+    #meanID1ID2 = update(ID1+ID2, x_cur, t_cur, Lambda, return_mean=True)
+    meanID1ID2 = 60 ############### TODO
+    #update(ID2, 0, t_cur, Lambda)
     lower=order(ID1,ID2)
     if lower==0 :
-        update_cov(ID1+ID2+Lambda, lower, meanID1, ID1, ID2, x_cur, t_cur, Lambda=_lambda)
+        update_cov(ID1+ID2, lower, meanID1ID2, x_cur, t_cur, Lambda)
     else :
-        update_cov(ID2+ID1+Lambda, lower, meanID1, ID1, ID2, x_cur, t_cur, Lambda=_lambda)
+        update_cov(ID2+ID1, lower, meanID1ID2, x_cur, t_cur, Lambda)
 
-def update_cov(key, lower, meanID1, ID1, ID2, x_cur, t_cur, Lambda=_lambda):  
+def update_cov(key, lower, meanID1ID2, x_cur, t_cur, Lambda=_lambda):  
     state2D = dict()
-    if not key+str(Lambda) in map2D :
+    if not key+'_'+str(Lambda) in map2D :
         state2D = create2D()
-        map2D[key+str(Lambda)] = state2D
+        map2D[key+'_'+str(Lambda)] = state2D
     else :
-        #decay = math.exp(-(t_cur - state['time'])/1e9*Lambda) # time in [ns]
-        decay = math.pow(2, (-(t_cur - state2D['time'])*Lambda)) #wrong IMHO
-        #decay = math.exp(-(t_cur - state['time'])*Lambda)  # time in [s]
+        state2D = map2D[key+'_'+str(Lambda)]
 
-        # Decay residules
-        self.processDecay(t,inc)
+    #print ('keyyyy',key+'_'+str(Lambda))
+    #decay = math.exp(-(t_cur - state['time'])/1e9*Lambda) # time in [ns]
+    decay = math.pow(2, (-(t_cur - state2D['time'])*Lambda)) #wrong IMHO
+    #decay = math.exp(-(t_cur - state['time'])*Lambda)  # time in [s]
 
-        factor = 1
-        # check for decay cf3
-        timeDiffs_cf3 = t - self.lastTimestamp_cf3
-        if timeDiffs_cf3 > 0:
-            self.CF3 *= factor
-            self.w3 *= factor
-            self.lastTimestamp_cf3 = t
-            self.lastRes[micro_inc_indx] *= factor
-        state2D['all'][0] *= decay
-        state2D['all'][1] *= decay
-        state2D['time'] = t_cur
+    # Decay residules
+    state2D['all'][0] *= decay
+    state2D['all'][1] *= decay
+    state2D['time'] = t_cur
 
-        
+    # Compute and update residule
+    res = (x_cur - meanID1ID2)
+    resid = (res * state2D['last_res'][1-lower])
+    state2D['all'][0] += 1
+    state2D['all'][1]+= resid
+    state2D['last_res'][lower] = res
 
-
-        # Compute and update residule
-        res = (x_cur - meanID1)
-        resid = (x_cur -res * state2D['last_res'][1-lower])
-        state2D['all'][0] += 1
-        state2D['all'][1]+= resid
-        state2D['last_res'][lower] = res
+def order(id1, id2) :
+    if id1 <= id2 :
+        return 0
+    else :
+        return 1

@@ -199,17 +199,23 @@ class FE:
         #print(timestamp)
 
         self.counter = self.counter + 1
+        print (' XXXXXXXXXXXXX counter',self.counter)
         if self.counter > 5 :
-            sys.exit()
+             sys.exit()
+
+        return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
+                                                int(framelen),
+                                                float(timestamp))
+
 
         ### Extract Features
-        try:
-            return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
-                                                 int(framelen),
-                                                 float(timestamp))
-        except Exception as e:
-            print(e)
-            return []
+        # try:
+        #     return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
+        #                                          int(framelen),
+        #                                          float(timestamp))
+        # except Exception as e:
+        #     print(e)
+        #     return []
 
 
     def pcap2tsv_with_tshark(self):
