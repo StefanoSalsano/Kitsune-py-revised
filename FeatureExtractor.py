@@ -199,9 +199,9 @@ class FE:
         #print(timestamp)
 
         self.counter = self.counter + 1
-        print (' XXXXXXXXXXXXX counter',self.counter)
-        if self.counter > 5 :
-             sys.exit()
+        #print (' XXXXXXXXXXXXX counter',self.counter)
+        # if self.counter > 5 :
+        #     sys.exit()
 
         return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
                                                 int(framelen),

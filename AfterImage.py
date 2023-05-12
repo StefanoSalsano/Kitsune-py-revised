@@ -25,7 +25,7 @@ class incStat:
                 v = dif
             else:
                 v = 0
-        
+            #print('isTypeDiff, dif',dif)
 
         # includes process decay
         #TODO-delete state.update(self.state, v, t, self.Lambda)
@@ -37,7 +37,9 @@ class incStat:
         self.CF2 += math.pow(v, 2)
         self.w += 1
         if (self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-            print ('ID',self.ID,'Lambda',self.Lambda,'compare w',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
+            print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
+        if (self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+            print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
@@ -191,7 +193,7 @@ class incStat_cov:
         # Extrapolate other stream
         #v_other = self.EXs[not(inc)].predict(t)
 
-        print ('self.incStats[0].ID',self.incStats[0].ID,'self.incStats[1].ID',self.incStats[1].ID,'XX ID',ID)
+        #print ('self.incStats[0].ID',self.incStats[0].ID,'self.incStats[1].ID',self.incStats[1].ID,'XX ID',ID)
         # Compute and update residule
         res = (v - self.incStats[inc].mean())
         resid = (v - self.incStats[inc].mean()) * self.lastRes[not(inc)]
@@ -202,11 +204,11 @@ class incStat_cov:
         myid2=self.incStats[inc].ID
         lower=state.order(myid1,myid2)
         if lower==0 :
-            key = myid1+myid2
+            key = myid1+myid2+'_'+str(self.incStats[1-lower].Lambda)
         else :
-            key = myid2+myid1
-        if (self.w3 - state.map2D[key+'_'+str(self.incStats[1-lower].Lambda)]['all'][0]) > 0.0000001 :
-            print ('key',key,'Lambda',self.incStats[1-lower].Lambda,'compare w3',self.w3, state.map2D[key+'_'+str(self.incStats[1-lower].Lambda)]['all'][0] )
+            key = myid2+myid1+'_'+str(self.incStats[1-lower].Lambda)
+        if (self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
+            print ('key',key,'Lambda',self.incStats[1-lower].Lambda,'compare w3',self.w3, state.map2D[key]['all'][0] )
 
 
     def processDecay(self,t,micro_inc_indx):
@@ -298,7 +300,7 @@ class incStatDB:
                 raise LookupError(
                     'Adding Entry:\n' + key + '\nwould exceed incStatHT 1D limit of ' + str(
                         self.limit) + '.\nObservation Rejected.')
-            incS = incStat(Lambda, ID, init_time, isTypeDiff)
+            incS = incStat(Lambda, ID, 0 if isTypeDiff else init_time, isTypeDiff=isTypeDiff)
             self.HT[key] = incS #add new entry
         return incS
 
@@ -311,7 +313,7 @@ class incStatDB:
         incS1 = self.register(ID1,Lambda,init_time,isTypeDiff)
         incS2 = self.register(ID2,Lambda,init_time,isTypeDiff)
 
-        #check for pre-exiting link
+        #check for pre-existing link
         for cov in incS1.covs:
             if (cov.incStats[0].ID == ID2 and cov.incStats[1].ID ==ID1) or (cov.incStats[1].ID == ID2 and cov.incStats[0].ID ==ID1) :
                 return cov #there is a pre-exiting link
@@ -395,17 +397,17 @@ class incStatDB:
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
     def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False):  # weight, mean, std
-        state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda,isTypeDiff)
-        incS = self.update(ID,t,v,Lambda,isTypeDiff)
+        state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
+        incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
         return incS.allstats_1D()
 
 
     # Updates and then pulls current correlative stats between the given IDs. Automatically registers previously unknown stream IDs, and cov tracking
     #Note: AfterImage does not currently support Diff Type streams for correlational statistics.
     def update_get_2D_Stats(self,ID1,ID2,t1,v1,Lambda=1,level=1):  #level=  1:cov,pcc  2:radius,magnitude,cov,pcc
-        state.update2D(ID1, ID2, v1, t1, Lambda)
+        #state.update2D(ID1, ID2, v1, t1, Lambda)
         #retrieve/add cov tracker
-        print('register_cov',ID1,ID2)
+        #print('register_cov',ID1,ID2)
         inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
         
         # Update cov tracker
@@ -418,6 +420,8 @@ class incStatDB:
     # Updates and then pulls current 1D and 2D stats from the given IDs. Automatically registers previously unknown stream IDs
     def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1):  # weight, mean, std
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        meanID1_ID2 = state.update(ID1+ID2,v1,t1,Lambda,return_mean=True)
+        state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda)
         return self.update_get_1D_Stats(ID1+ID2,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
