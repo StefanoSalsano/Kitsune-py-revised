@@ -29,17 +29,20 @@ class incStat:
 
         # includes process decay
         #TODO-delete state.update(self.state, v, t, self.Lambda)
-
+        if (self.ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and self.Lambda == 5) :
+            print('inside insert, w:',self.w)
         self.processDecay(t)
 
         # update with v
         self.CF1 += v
         self.CF2 += math.pow(v, 2)
         self.w += 1
-        if (self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
             print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
-        if (self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
             print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
+        if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+            print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
@@ -84,7 +87,7 @@ class incStat:
 
     def cov(self,ID2):
         for cov in self.covs:
-            if cov.incStats[0].ID == ID2 or cov.incStats[1].ID == ID2:
+            if cov.incStats[0].ID == ID2 or cov.incStats[1].ID == ID2 :
                 return cov.cov()
         return [np.nan]
 
@@ -160,7 +163,7 @@ class incStat_cov:
     def __init__(self, incS1, incS2, init_time = 0):
         # store references to the streams' incStats
         self.incStats = [incS1,incS2]
-        self.lastRes = [0,0]
+        self.lastRes = [0.0,0.0]
         # init extrapolators
         #self.EXs = [extrapolator(),extrapolator()]
 
@@ -200,16 +203,24 @@ class incStat_cov:
         self.CF3 += resid
         self.w3 += 1
         self.lastRes[inc] = res
-        myid1=self.incStats[not(inc)].ID
-        myid2=self.incStats[inc].ID
-        lower=state.order(myid1,myid2)
-        if lower==0 :
-            key = myid1+myid2+'_'+str(self.incStats[1-lower].Lambda)
+        myid1=self.incStats[not(inc)].ID+'_'+str(self.incStats[not(inc)].Lambda)
+        myid2=self.incStats[inc].ID+'_'+str(self.incStats[inc].Lambda)
+        #print('id1',myid1,'id2',myid2)
+        # lower=state.order(myid1,myid2)
+        # if lower==0 :
+        #     key = myid1+'_'+str(self.incStats[1-lower].Lambda)
+        # else :
+        #     key = myid2+'_'+str(self.incStats[1-lower].Lambda)
+        if myid1 in state.map2D :
+            key = myid1
         else :
-            key = myid2+myid1+'_'+str(self.incStats[1-lower].Lambda)
-        if (self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
-            print ('key',key,'Lambda',self.incStats[1-lower].Lambda,'compare w3',self.w3, state.map2D[key]['all'][0] )
-
+            key = myid2
+        if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
+            print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
+        if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
+            print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
+        if (key == '192.168.2.101192.168.2.110_0.01') :
+            print ('AAAAAAkey',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
 
     def processDecay(self,t,micro_inc_indx):
         factor = 1
@@ -296,6 +307,8 @@ class incStatDB:
         key = ('jitter'+ID if isTypeDiff else ID)+"_"+str(Lambda)
         incS = self.HT.get(key)
         if incS is None: #does not already exist
+            if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+                print ('inside register, creating')
             if len(self.HT) + 1 > self.limit:
                 raise LookupError(
                     'Adding Entry:\n' + key + '\nwould exceed incStatHT 1D limit of ' + str(
@@ -306,16 +319,21 @@ class incStatDB:
 
     # Registers covariance tracking for two streams, registers missing streams
     def register_cov(self,ID1,ID2,Lambda=1,init_time=0,isTypeDiff=False):
+        # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
+        #     print ('register_cov')
         #Default Lambda?
         Lambda = self.get_lambda(Lambda)
 
         # Lookup both streams
-        incS1 = self.register(ID1,Lambda,init_time,isTypeDiff)
-        incS2 = self.register(ID2,Lambda,init_time,isTypeDiff)
+        incS1 = self.register(ID1+ID2,Lambda,init_time,isTypeDiff)
+        incS2 = self.register(ID2+ID1,Lambda,init_time,isTypeDiff)
 
         #check for pre-existing link
         for cov in incS1.covs:
-            if (cov.incStats[0].ID == ID2 and cov.incStats[1].ID ==ID1) or (cov.incStats[1].ID == ID2 and cov.incStats[0].ID ==ID1) :
+            # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
+            #     print ('IDs:',cov.incStats[0].ID,cov.incStats[1].ID)
+            if (cov.incStats[0].ID == ID2+ID1 and cov.incStats[1].ID ==ID1+ID2) or (cov.incStats[1].ID == ID2+ID1 and cov.incStats[0].ID ==ID1+ID2) :
+                # print('existing cov!')
                 return cov #there is a pre-exiting link
 
         # Link incStats
@@ -326,6 +344,8 @@ class incStatDB:
 
     # updates/registers stream
     def update(self,ID,t,v,Lambda=1,isTypeDiff=False):
+        if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+            print ('inside update')
         incS = self.register(ID,Lambda,t,isTypeDiff)
         incS.insert(v,t)
         return incS
@@ -396,8 +416,11 @@ class incStatDB:
         return [np.sqrt(rad),np.sqrt(mag)]
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
-    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False):  # weight, mean, std
-        state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
+    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
+        if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+            print ('after image here')
+        if stateUpdate :
+            state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
         return incS.allstats_1D()
 
@@ -407,22 +430,25 @@ class incStatDB:
     def update_get_2D_Stats(self,ID1,ID2,t1,v1,Lambda=1,level=1):  #level=  1:cov,pcc  2:radius,magnitude,cov,pcc
         #state.update2D(ID1, ID2, v1, t1, Lambda)
         #retrieve/add cov tracker
-        #print('register_cov',ID1,ID2)
+        # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
+        #     print('update_get_2D_Stats',ID1,ID2)
         inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
         
         # Update cov tracker
-        inc_cov.update_cov(ID1,v1,t1)
+        inc_cov.update_cov(ID1+ID2,v1,t1)
         if level == 1:
             return inc_cov.get_stats1()
         else:
             return inc_cov.get_stats2()
 
     # Updates and then pulls current 1D and 2D stats from the given IDs. Automatically registers previously unknown stream IDs
-    def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1):  # weight, mean, std
+    def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1,counter=0):  # weight, mean, std
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        if ((ID1+ID2)=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+            print ('second after image here')
         meanID1_ID2 = state.update(ID1+ID2,v1,t1,Lambda,return_mean=True)
-        state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda)
-        return self.update_get_1D_Stats(ID1+ID2,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
+        return self.update_get_1D_Stats(ID1+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?

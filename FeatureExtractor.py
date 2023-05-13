@@ -148,6 +148,8 @@ class FE:
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = row[2]  # src MAC
                     dstIP = row[3]  # dst MAC
+            if self.counter == 45 :
+                print ('srcproto', srcproto, srcIP, dstIP) 
 
         elif self.parse_type == "scapy":
             packet = self.scapyin[self.curPacketIndx]
@@ -199,13 +201,13 @@ class FE:
         #print(timestamp)
 
         self.counter = self.counter + 1
-        #print (' XXXXXXXXXXXXX counter',self.counter)
+        print (' XXXXXXXXXXXXX counter',self.counter)
         # if self.counter > 5 :
-        #     sys.exit()
+        #      sys.exit()
 
         return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
                                                 int(framelen),
-                                                float(timestamp))
+                                                float(timestamp),self.counter)
 
 
         ### Extract Features

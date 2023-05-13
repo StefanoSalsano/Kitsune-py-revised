@@ -70,7 +70,7 @@ class netStat:
 
         return src_subnet, dst_subnet
 
-    def updateGetStats(self, IPtype, srcMAC,dstMAC, srcIP, srcProtocol, dstIP, dstProtocol, datagramSize, timestamp):
+    def updateGetStats(self, IPtype, srcMAC,dstMAC, srcIP, srcProtocol, dstIP, dstProtocol, datagramSize, timestamp, counter):
         # Host BW: Stats on the srcIP's general Sender Statistics
         Hstat = np.zeros((3*len(self.Lambdas,)))
         for i in range(len(self.Lambdas)):
@@ -84,7 +84,7 @@ class netStat:
         # Host-Host BW: Stats on the dual traffic behavior between srcIP and dstIP
         HHstat =  np.zeros((7*len(self.Lambdas,)))
         for i in range(len(self.Lambdas)):
-            HHstat[(i*7):((i+1)*7)] = self.HT_H.update_get_1D2D_Stats(srcIP, dstIP,timestamp,datagramSize,self.Lambdas[i])
+            HHstat[(i*7):((i+1)*7)] = self.HT_H.update_get_1D2D_Stats(srcIP, dstIP,timestamp,datagramSize,self.Lambdas[i],counter=counter)
 
         # Host-Host Jitter:
         HHstat_jit =  np.zeros((3*len(self.Lambdas,)))
@@ -95,10 +95,10 @@ class netStat:
         HpHpstat =  np.zeros((7*len(self.Lambdas,)))
         if srcProtocol == 'arp':
             for i in range(len(self.Lambdas)):
-                HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcMAC, dstMAC, timestamp, datagramSize, self.Lambdas[i])
+                HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcMAC, dstMAC, timestamp, datagramSize, self.Lambdas[i],counter=counter)
         else:  # some other protocol (e.g. TCP/UDP)
             for i in range(len(self.Lambdas)):
-                HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP + srcProtocol, dstIP + dstProtocol, timestamp, datagramSize, self.Lambdas[i])
+                HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP + srcProtocol, dstIP + dstProtocol, timestamp, datagramSize, self.Lambdas[i],counter=counter)
 
         return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
 

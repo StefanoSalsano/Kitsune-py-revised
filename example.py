@@ -57,9 +57,12 @@ print("Complete ok. Time elapsed: "+ str(stop - start))
 
 import pandas as pd
 df = pd.DataFrame(collector)
-df.rename (columns={0: 500},inplace=True)
+converter=dict()
+for i in range(0,115) :
+    converter[i]=i+1
+df.rename (columns=converter,inplace=True)
 print (df)
-#df.to_csv('output.csv')
+df.to_csv('output.csv')
 
 sys.exit()
 
