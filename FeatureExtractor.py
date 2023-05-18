@@ -30,7 +30,6 @@ class FE:
         self.curPacketIndx = 0
         self.tsvin = None #used for parsing TSV file
         self.scapyin = None #used for parsing pcap with scapy
-        self.counter = 0
 
         ### Prep pcap ##
         self.__prep__()
@@ -148,8 +147,12 @@ class FE:
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = row[2]  # src MAC
                     dstIP = row[3]  # dst MAC
-            if self.counter == 45 :
-                print ('srcproto', srcproto, srcIP, dstIP) 
+            # if self.curPacketIndx == 45 :
+            #     print ('srcproto', srcproto, srcIP, dstIP)
+            if srcproto == '' :
+                srcproto = 'null'
+            if dstproto == '' :
+                dstproto = 'null'
 
         elif self.parse_type == "scapy":
             packet = self.scapyin[self.curPacketIndx]
@@ -194,20 +197,24 @@ class FE:
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = packet.src  # src MAC
                     dstIP = packet.dst  # dst MAC
+            if srcproto == '' :
+                srcproto = 'null'
+            if dstproto == '' :
+                dstproto = 'null'
+
         else:
             return []
 
         self.curPacketIndx = self.curPacketIndx + 1
         #print(timestamp)
 
-        self.counter = self.counter + 1
-        print (' XXXXXXXXXXXXX counter',self.counter)
-        # if self.counter > 5 :
-        #      sys.exit()
+        print (' >>>> counter',self.curPacketIndx)
+        if self.curPacketIndx > 200 :
+             sys.exit()
 
         return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
                                                 int(framelen),
-                                                float(timestamp),self.counter)
+                                                float(timestamp),self.curPacketIndx)
 
 
         ### Extract Features

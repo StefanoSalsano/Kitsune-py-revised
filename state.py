@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import FeatureExtractor
 
 time_constant = 10 # [seconds]
 _lambda = 1/time_constant
@@ -27,23 +28,23 @@ def create() :
     # I TRY NOT TO STORE LAMBDA IN THE STATE
     state={}
     state['time']=0
-    state['all']=np.array([0,0,0])
+    state['all']=np.array([0.0,0.0,0.0])
     state['slot']=0
-    state['approx']=np.array([0,0,0,0])
+    state['approx']=np.array([0.0,0.0,0.0,0.0])
     state['isTypeDiff']=False
     return (state)
 
 def create2D():
     state2D={}
     state2D['time']=0
-    state2D['all']=np.array([0,0]) # w3, sum
+    state2D['all']=np.array([0.0,0.0]) # w3, sum
     state2D['last_res']=[0,0]
     return (state2D)
 
 #update_get_1D_Stats(srcIP, timestamp, datagramSize, Lambda)
 def update (ID1, x_cur, t_cur, Lambda=_lambda, return_mean=False, isTypeDiff=False) :
-    if (ID1=='192.168.2.1192.168.2.108' and Lambda == 5) :
-        print ('here')
+    # if (ID1=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+    #     print ('state here')
     state=dict()
     if not ID1+'_'+str(Lambda) in map1D :
         state = create()
@@ -78,30 +79,33 @@ def update (ID1, x_cur, t_cur, Lambda=_lambda, return_mean=False, isTypeDiff=Fal
 
 #update_get_1D2D_Stats(srcIP, dstIP,timestamp,datagramSize,Lambda)
 
-def update2D(ID1, ID2, x_cur, t_cur, Lambda=_lambda):  
+def update2D(ID1, ID2, x_cur, t_cur, meanID1ID2, Lambda=_lambda, counter=0):  
     #meanID1ID2 = update(ID1+ID2, x_cur, t_cur, Lambda, return_mean=True)
-    meanID1ID2 = 60 ############### TODO
     #update(ID2, 0, t_cur, Lambda)
     lower=order(ID1,ID2)
     if lower==0 :
-        update_cov(ID1+ID2, lower, meanID1ID2, x_cur, t_cur, Lambda)
+        update_cov(ID1+ID2, lower, meanID1ID2, x_cur, t_cur, Lambda, counter)
     else :
-        update_cov(ID2+ID1, lower, meanID1ID2, x_cur, t_cur, Lambda)
+        update_cov(ID2+ID1, lower, meanID1ID2, x_cur, t_cur, Lambda, counter)
 
-def update_cov(key, lower, meanID1ID2, x_cur, t_cur, Lambda=_lambda):  
+def update_cov(key, lower, meanID1ID2, x_cur, t_cur, Lambda=_lambda,counter=0):
     state2D = dict()
     if not key+'_'+str(Lambda) in map2D :
+        #print('creating key',key+'_'+str(Lambda))
         state2D = create2D()
         map2D[key+'_'+str(Lambda)] = state2D
     else :
         state2D = map2D[key+'_'+str(Lambda)]
 
-    #print ('keyyyy',key+'_'+str(Lambda))
+    #print ('key',key+'_'+str(Lambda))
     #decay = math.exp(-(t_cur - state['time'])/1e9*Lambda) # time in [ns]
     decay = math.pow(2, (-(t_cur - state2D['time'])*Lambda)) #wrong IMHO
     #decay = math.exp(-(t_cur - state['time'])*Lambda)  # time in [s]
-
+    #print ('decay',decay)
     # Decay residules
+    # if (counter==54 and Lambda == 0.01) :
+    #     print ('key',key)
+    #     print (state2D['all'][0],state2D['all'][1])
     state2D['all'][0] *= decay
     state2D['all'][1] *= decay
     state2D['time'] = t_cur
@@ -112,6 +116,7 @@ def update_cov(key, lower, meanID1ID2, x_cur, t_cur, Lambda=_lambda):
     state2D['all'][0] += 1
     state2D['all'][1]+= resid
     state2D['last_res'][lower] = res
+
 
 def order(id1, id2) :
     if id1 <= id2 :

@@ -24,7 +24,7 @@ import sys
 
 # File location
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
-path = "mirai200.pcap" #the pcap, pcapng, or tsv file to process.
+path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
 
 packet_limit = np.Inf #the number of packets to process
 
@@ -58,11 +58,14 @@ print("Complete ok. Time elapsed: "+ str(stop - start))
 import pandas as pd
 df = pd.DataFrame(collector)
 converter=dict()
+row_converter=dict()
 for i in range(0,115) :
     converter[i]=i+1
-df.rename (columns=converter,inplace=True)
-print (df)
-df.to_csv('output.csv')
+for i in range(0,201) :
+    row_converter[i]=i+1
+df.rename (columns=converter,index=row_converter,inplace=True)
+#print (df)
+#df.to_csv('output.csv')
 
 sys.exit()
 

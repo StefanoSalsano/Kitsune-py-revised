@@ -98,6 +98,8 @@ class netStat:
                 HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcMAC, dstMAC, timestamp, datagramSize, self.Lambdas[i],counter=counter)
         else:  # some other protocol (e.g. TCP/UDP)
             for i in range(len(self.Lambdas)):
+                if srcIP == srcIP + srcProtocol :
+                    print ('collision', srcIP, srcProtocol)
                 HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP + srcProtocol, dstIP + dstProtocol, timestamp, datagramSize, self.Lambdas[i],counter=counter)
 
         return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector

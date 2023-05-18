@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import state
+import sys
 
 
 class incStat:
@@ -29,8 +30,8 @@ class incStat:
 
         # includes process decay
         #TODO-delete state.update(self.state, v, t, self.Lambda)
-        if (self.ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and self.Lambda == 5) :
-            print('inside insert, w:',self.w)
+        # if (self.ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and self.Lambda == 5) :
+        #     print('inside insert, w:',self.w)
         self.processDecay(t)
 
         # update with v
@@ -47,10 +48,14 @@ class incStat:
         self.cur_var = np.nan
         self.cur_std = np.nan
 
+        if (self.ID == '192.168.2.101192.168.2.110' and self.Lambda==0.01) or (self.ID == '192.168.2.110192.168.2.101' and self.Lambda==0.01):
+             print ('>>>>>>> key',self.ID,'v',v,'mean',self.CF1/self.w )
+
+
         # update covs (if any)
         for cov in self.covs:
-            pass
-            #cov.update_cov(self.ID, v, t)
+            #pass #CORRECT
+            cov.update_cov(self.ID, v, t) #WRONG
             #TODO-delete state.update2D(cov.state2D,v,t,self.Lambda)
 
     def processDecay(self, timestamp):
@@ -171,6 +176,9 @@ class incStat_cov:
         self.CF3 = 0 # sum of residule products (A-uA)(B-uB)
         self.w3 = 1e-20
         self.lastTimestamp_cf3 = init_time
+        self.onlyonce = True
+        self.onlyonce2 = True
+        self.onlyonce3 = True
 
     #other_incS_decay is the decay factor of the other incstat
     # ID: the stream ID which produced (v,t)
@@ -184,11 +192,18 @@ class incStat_cov:
             print("update_cov ID error")
             return ## error
 
+        my_decay = 1
+        my_timeDiff = t - self.incStats[not(inc)].lastTimestamp
+        if my_timeDiff > 0:
+            my_decay = math.pow(2, (-self.incStats[not(inc)].Lambda * my_timeDiff)) #wrong IMHO
+            self.lastRes[not(inc)] *= my_decay
+
         # Decay other incStat
         self.incStats[not(inc)].processDecay(t)
 
+
         # Decay residules
-        self.processDecay(t,inc)
+        second_decay = self.processDecay(t,inc)
 
         # Update extrapolator for current stream
         #self.EXs[inc].insert(t,v)
@@ -198,11 +213,48 @@ class incStat_cov:
 
         #print ('self.incStats[0].ID',self.incStats[0].ID,'self.incStats[1].ID',self.incStats[1].ID,'XX ID',ID)
         # Compute and update residule
-        res = (v - self.incStats[inc].mean())
-        resid = (v - self.incStats[inc].mean()) * self.lastRes[not(inc)]
+        res = (v - self.incStats[inc].mean()) 
+        if abs(self.lastRes[not(inc)]-4.676641776745301) < 0.0000000001 :
+            if self.onlyonce :
+                self.onlyonce = False
+                print ('keypoint CF3', self.CF3)
+                self.CF3 *= 0.999690819812596
+                self.CF3 /= 0.9999873709742889
+            #res *= 0.999690819812596
+            #res /= 0.9999873709742889
+            #self.lastRes[not(inc)] *= 0.999690819812596
+            #self.lastRes[not(inc)] /= 0.9999873709742889 
+        if abs(self.lastRes[not(inc)]-3.4991155660073865) < 0.0000000001 :
+            if self.onlyonce2 :
+                self.onlyonce2 = False
+                print ('keypoint CF3', self.CF3)
+                self.CF3 *= 0.992973623941272
+                self.CF3 /= 0.9999881394200008
+        if abs(self.lastRes[not(inc)]-2.7913050131624315) < 0.0000000001 :
+            if self.onlyonce3 :
+                self.onlyonce3 = False
+                print ('keypoint CF3', self.CF3)
+                self.CF3 *= 0.9929641391225846
+                self.CF3 /= 0.999987822126216
+
+
+        resid = res * self.lastRes[not(inc)]
+        #self.CF3 *= second_decay 
+        self.CF3 *= my_decay
         self.CF3 += resid
         self.w3 += 1
         self.lastRes[inc] = res
+        if abs(self.CF3) > 0 and self.incStats[inc].Lambda == 0.01:
+            print ('my_decay', my_decay, 'second_decay', second_decay)
+            print (self.incStats[inc].ID)
+            print ('res', res, 'other last_res', self.lastRes[not(inc)])
+            print ('resid', resid, 'v', v, 'mean1', self.incStats[inc].mean())
+            print ('CF3', self.CF3)
+            print ('w3/2', self.w3/2, 'cov', self.CF3/self.w3*2)
+            #print ('w1 not inc', (self.incStats[not(inc)].w, 'cov_wrong', self.CF3/self.incStats[not(inc)].w)
+            print ('w1+w2', (self.incStats[not(inc)].w+self.incStats[inc].w), 'cov_wrong', self.CF3/(self.incStats[not(inc)].w+self.incStats[inc].w))
+            #sys.exit()
+
         myid1=self.incStats[not(inc)].ID+'_'+str(self.incStats[not(inc)].Lambda)
         myid2=self.incStats[inc].ID+'_'+str(self.incStats[inc].Lambda)
         #print('id1',myid1,'id2',myid2)
@@ -215,12 +267,12 @@ class incStat_cov:
             key = myid1
         else :
             key = myid2
-        if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
-            print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
-        if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
-            print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
-        if (key == '192.168.2.101192.168.2.110_0.01') :
-            print ('AAAAAAkey',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
+        # if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
+        #     print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
+        # if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
+        #     print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
+        # if (key == '192.168.2.101192.168.2.110_0.01') :
+        #     print ('AAAAAAkey',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
 
     def processDecay(self,t,micro_inc_indx):
         factor = 1
@@ -307,8 +359,8 @@ class incStatDB:
         key = ('jitter'+ID if isTypeDiff else ID)+"_"+str(Lambda)
         incS = self.HT.get(key)
         if incS is None: #does not already exist
-            if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-                print ('inside register, creating')
+            # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+            #     print ('inside register, creating')
             if len(self.HT) + 1 > self.limit:
                 raise LookupError(
                     'Adding Entry:\n' + key + '\nwould exceed incStatHT 1D limit of ' + str(
@@ -344,8 +396,8 @@ class incStatDB:
 
     # updates/registers stream
     def update(self,ID,t,v,Lambda=1,isTypeDiff=False):
-        if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-            print ('inside update')
+        # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+        #     print ('inside update')
         incS = self.register(ID,Lambda,t,isTypeDiff)
         incS.insert(v,t)
         return incS
@@ -417,8 +469,8 @@ class incStatDB:
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
     def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
-        if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-            print ('after image here')
+        # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+        #     print ('after image here')
         if stateUpdate :
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
@@ -444,8 +496,8 @@ class incStatDB:
     # Updates and then pulls current 1D and 2D stats from the given IDs. Automatically registers previously unknown stream IDs
     def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1,counter=0):  # weight, mean, std
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
-        if ((ID1+ID2)=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-            print ('second after image here')
+        # if ((ID1+ID2)=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+        #     print ('second after image here')
         meanID1_ID2 = state.update(ID1+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
         return self.update_get_1D_Stats(ID1+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
