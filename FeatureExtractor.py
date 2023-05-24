@@ -209,7 +209,7 @@ class FE:
         #print(timestamp)
 
         print (' >>>> counter',self.curPacketIndx)
-        if self.curPacketIndx > 200 :
+        if self.curPacketIndx > 500 :
              sys.exit()
 
         return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,

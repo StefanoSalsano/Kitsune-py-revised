@@ -55,7 +55,7 @@ class incStat:
         # update covs (if any)
         for cov in self.covs:
             #pass #CORRECT
-            cov.update_cov(self.ID, v, t) #WRONG
+            cov.update_cov(self.ID, v, t, dadove='for') #WRONG
             #TODO-delete state.update2D(cov.state2D,v,t,self.Lambda)
 
     def processDecay(self, timestamp):
@@ -179,10 +179,16 @@ class incStat_cov:
         self.onlyonce = True
         self.onlyonce2 = True
         self.onlyonce3 = True
+        self.onlyonce4 = True
+        self.onlyonce5 = True
+        self.onlyonce6 = True
+        self.onlyonce7 = True
+        self.error_decay_state =1.0
+        self.incstate = -1
 
     #other_incS_decay is the decay factor of the other incstat
     # ID: the stream ID which produced (v,t)
-    def update_cov(self, ID, v, t):  # it is assumes that incStat "ID" has ALREADY been updated with (t,v) [this si performed automatically in method incStat.insert()]
+    def update_cov(self, ID, v, t, dadove=''):  # it is assumes that incStat "ID" has ALREADY been updated with (t,v) [this si performed automatically in method incStat.insert()]
         # find incStat
         if ID == self.incStats[0].ID:
             inc = 0
@@ -192,18 +198,21 @@ class incStat_cov:
             print("update_cov ID error")
             return ## error
 
-        my_decay = 1
+        other_decay = 1
         my_timeDiff = t - self.incStats[not(inc)].lastTimestamp
         if my_timeDiff > 0:
-            my_decay = math.pow(2, (-self.incStats[not(inc)].Lambda * my_timeDiff)) #wrong IMHO
-            self.lastRes[not(inc)] *= my_decay
+            other_decay = math.pow(2, (-self.incStats[not(inc)].Lambda * my_timeDiff)) #wrong IMHO
+            self.lastRes[not(inc)] *= other_decay
+            if inc == 0 and dadove == 'for':
+            #if dadove == 'for':
+                self.error_decay_state = other_decay
 
         # Decay other incStat
         self.incStats[not(inc)].processDecay(t)
 
 
         # Decay residules
-        second_decay = self.processDecay(t,inc)
+        this_decay = self.processDecay(t,inc)
 
         # Update extrapolator for current stream
         #self.EXs[inc].insert(t,v)
@@ -213,44 +222,118 @@ class incStat_cov:
 
         #print ('self.incStats[0].ID',self.incStats[0].ID,'self.incStats[1].ID',self.incStats[1].ID,'XX ID',ID)
         # Compute and update residule
-        res = (v - self.incStats[inc].mean()) 
-        if abs(self.lastRes[not(inc)]-4.676641776745301) < 0.0000000001 :
-            if self.onlyonce :
-                self.onlyonce = False
-                print ('keypoint CF3', self.CF3)
-                self.CF3 *= 0.999690819812596
-                self.CF3 /= 0.9999873709742889
-            #res *= 0.999690819812596
-            #res /= 0.9999873709742889
-            #self.lastRes[not(inc)] *= 0.999690819812596
-            #self.lastRes[not(inc)] /= 0.9999873709742889 
-        if abs(self.lastRes[not(inc)]-3.4991155660073865) < 0.0000000001 :
-            if self.onlyonce2 :
-                self.onlyonce2 = False
-                print ('keypoint CF3', self.CF3)
-                self.CF3 *= 0.992973623941272
-                self.CF3 /= 0.9999881394200008
-        if abs(self.lastRes[not(inc)]-2.7913050131624315) < 0.0000000001 :
-            if self.onlyonce3 :
-                self.onlyonce3 = False
-                print ('keypoint CF3', self.CF3)
-                self.CF3 *= 0.9929641391225846
-                self.CF3 /= 0.999987822126216
+#        if (ID == '192.168.2.101192.168.2.110' and self.incStats[not(inc)].Lambda==0.01) or (ID == '192.168.2.110192.168.2.101' and self.incStats[not(inc)].Lambda==0.01) :
+        if (ID == '192.168.2.1192.168.2.115' and self.incStats[not(inc)].Lambda==0.01) or (ID == '192.168.2.115192.168.2.1' and self.incStats[not(inc)].Lambda==0.01) :
+            print ('ID is:', ID, 'my_timeDiff', my_timeDiff )
+            print (self.lastRes[not(inc)])
 
+
+        res = (v - self.incStats[inc].mean()) 
+        # if abs(self.lastRes[not(inc)]-4.676641776745301) < 0.0000000001 :
+        #     if self.onlyonce :
+        #         self.onlyonce = False
+        #         print ('keypoint CF3 #56', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.999690819812596
+        #         self.CF3 /= 0.9999873709742889
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        #     #res *= 0.999690819812596
+        #     #res /= 0.9999873709742889
+        # if abs(self.lastRes[not(inc)]-3.4991155660073865) < 0.0000000001 :
+        #     if self.onlyonce2 :
+        #         self.onlyonce2 = False
+        #         print ('keypoint CF3 #94', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.992973623941272
+        #         self.CF3 /= 0.9999881394200008
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]-2.7913050131624315) < 0.0000000001 :
+        #     if self.onlyonce3 :
+        #         self.onlyonce3 = False
+        #         print ('keypoint CF3 #153', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9929641391225846
+        #         self.CF3 /= 0.999987822126216
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]-2.318939913099542) < 0.0000000001 :
+        #     if self.onlyonce4 :
+        #         self.onlyonce4 = False
+        #         print ('keypoint CF3 #195', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9930545045718324
+        #         self.CF3 /= 0.9999886401494598
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]-1.9811834800823276) < 0.0000000001 :
+        #     if self.onlyonce5 :
+        #         self.onlyonce5 = False
+        #         print ('keypoint CF3 #232', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9930291890762589
+        #         self.CF3 /= 0.9999337299652477
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]-1.727914760401055) < 0.0000000001 :
+        #     if self.onlyonce6 :
+        #         self.onlyonce6 = False
+        #         print ('keypoint CF3 #270', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9930512289145069
+        #         self.CF3 /= 0.9999843980038601
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]-1.5307653518358477) < 0.0000000001 :
+        #     if self.onlyonce7 :
+        #         self.onlyonce7 = False
+        #         print ('keypoint CF3 #296', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9930423078905233
+        #         self.CF3 /= 0.9999736613410078
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+
+        if abs(self.lastRes[not(inc)]/1.4186533805667382e-14-1.0) < 0.00000001 :
+            if self.onlyonce7 :
+                self.onlyonce7 = False
+                print ('keypoint CF3 #207', self.CF3, 'inc', inc)
+                self.CF3 *= 0.9997211921257476
+                self.CF3 /= 0.9985669764747996
+                # self.CF3 *= this_decay
+                # self.CF3 /= other_decay
+        if abs(self.lastRes[not(inc)]/1.4013235909192496e-14-1.0) < 0.00000001 :
+            if self.onlyonce6 :
+                self.onlyonce6 = False
+                print ('keypoint CF3 #267', self.CF3, 'inc', inc)
+                self.CF3 *= 0.9946660501016131
+                self.CF3 /= 0.9930813847351339
+                # self.CF3 *= this_decay
+                # self.CF3 /= other_decay
+        if abs(self.lastRes[not(inc)]/1.4208504063681235e-14-1.0) < 0.00000001 :
+            if self.onlyonce5 :
+                self.onlyonce5 = False
+                print ('keypoint CF3 #271', self.CF3, 'inc', inc)
+                self.CF3 *= 0.9999851664472873
+                self.CF3 /= 0.9998345876044842
+                # self.CF3 *= this_decay
+                # self.CF3 /= other_decay
+
+
+        if dadove == 'for':
+            if inc == 1 :
+                self.CF3 *= self.error_decay_state
+            if inc == 0 :
+                self.CF3 *= other_decay
+        else :
+            self.CF3 *= other_decay
 
         resid = res * self.lastRes[not(inc)]
-        #self.CF3 *= second_decay 
-        self.CF3 *= my_decay
+        #self.CF3 *= this_decay 
         self.CF3 += resid
         self.w3 += 1
         self.lastRes[inc] = res
         if abs(self.CF3) > 0 and self.incStats[inc].Lambda == 0.01:
-            print ('my_decay', my_decay, 'second_decay', second_decay)
-            print (self.incStats[inc].ID)
+            print ('other_decay', other_decay, 'this_decay', this_decay)
+            #print (self.incStats[inc].ID)
             print ('res', res, 'other last_res', self.lastRes[not(inc)])
             print ('resid', resid, 'v', v, 'mean1', self.incStats[inc].mean())
-            print ('CF3', self.CF3)
-            print ('w3/2', self.w3/2, 'cov', self.CF3/self.w3*2)
+            print ('CF3', self.CF3, 'dadove', dadove)
+            #print ('w3/2', self.w3/2, 'cov', self.CF3/self.w3*2)
             #print ('w1 not inc', (self.incStats[not(inc)].w, 'cov_wrong', self.CF3/self.incStats[not(inc)].w)
             print ('w1+w2', (self.incStats[not(inc)].w+self.incStats[inc].w), 'cov_wrong', self.CF3/(self.incStats[not(inc)].w+self.incStats[inc].w))
             #sys.exit()
@@ -487,7 +570,7 @@ class incStatDB:
         inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
         
         # Update cov tracker
-        inc_cov.update_cov(ID1+ID2,v1,t1)
+        inc_cov.update_cov(ID1+ID2,v1,t1, dadove='get2D')
         if level == 1:
             return inc_cov.get_stats1()
         else:
