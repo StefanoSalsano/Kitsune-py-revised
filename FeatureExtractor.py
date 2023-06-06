@@ -2,6 +2,8 @@
 import os
 import subprocess
 import sys
+from collections import OrderedDict
+import json
 
 use_extrapolation=False #experimental correlation code
 if use_extrapolation:
@@ -208,10 +210,12 @@ class FE:
         self.curPacketIndx = self.curPacketIndx + 1
         #print(timestamp)
 
-        print (' >>>> counter',self.curPacketIndx)
-        if self.curPacketIndx > 500 :
-             sys.exit()
-
+        #print (' >>>> counter',self.curPacketIndx)
+        if self.curPacketIndx > np.Inf :
+        # if self.curPacketIndx > 200 :
+            self.evaluate_stats()
+            sys.exit()
+            
         return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
                                                 int(framelen),
                                                 float(timestamp),self.curPacketIndx)
@@ -225,6 +229,62 @@ class FE:
         # except Exception as e:
         #     print(e)
         #     return []
+
+
+    def evaluate_stats_dict(self, dictionary) :
+
+        flow_counter = 0
+        packet_counter = 0
+        histogram = dict()
+
+        for key, value in dictionary.items() :
+            if value.time_value != [] :
+                flow_counter += 1
+                samples = len (value.time_value)
+                packet_counter += samples
+                if samples in histogram :
+                    histogram[samples] += 1
+                else :
+                    histogram[samples] = 1
+                #print (key, value.time_value)
+        print ('num of flows',flow_counter)
+        print ('num of packets',packet_counter)
+        print (histogram)
+        dict1 = OrderedDict(sorted(histogram.items()))
+        print(dict1)
+
+    def export_flow_time_values_dict(self, dictionary, out_dict) :
+
+        flow_counter = 0
+        packet_counter = 0
+        histogram = dict()
+
+        for key, value in dictionary.items() :
+            if value.time_value != [] :
+                flow_counter += 1
+                samples = len (value.time_value)
+                packet_counter += samples
+                if samples in histogram :
+                    histogram[samples] += 1
+                else :
+                    histogram[samples] = 1
+                out_dict[key]=value.time_value
+                #print (key, value.time_value)
+
+
+
+    def export_flow_time_values(self) :
+        out_dict = dict()
+        self.export_flow_time_values_dict(self.nstat.HT_H.HT,out_dict)
+        self.export_flow_time_values_dict(self.nstat.HT_Hp.HT,out_dict)
+        json_string = json.dumps(out_dict, indent=2)
+        with open('json_data.json', 'w') as outfile:
+            outfile.write(json_string)
+
+
+    def evaluate_stats(self) :
+        self.evaluate_stats_dict(self.nstat.HT_H.HT)
+        self.evaluate_stats_dict(self.nstat.HT_Hp.HT)
 
 
     def pcap2tsv_with_tshark(self):

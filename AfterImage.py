@@ -17,6 +17,7 @@ class incStat:
         self.cur_var = np.nan
         self.cur_std = np.nan
         self.covs = [] # a list of incStat_covs (references) with relate to this incStat
+        self.time_value = []
         #TODO-delete self.state = state.create()
 
     def insert(self, v, t=0):  # v is a scalar, t is v's arrival the timestamp
@@ -38,18 +39,20 @@ class incStat:
         self.CF1 += v
         self.CF2 += math.pow(v, 2)
         self.w += 1
-        if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-            print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
-        if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-            print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
-        if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-            print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
+        # if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #     print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
+        # if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #     print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
+        # if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #     print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
 
-        if (self.ID == '192.168.2.101192.168.2.110' and self.Lambda==0.01) or (self.ID == '192.168.2.110192.168.2.101' and self.Lambda==0.01):
-             print ('>>>>>>> key',self.ID,'v',v,'mean',self.CF1/self.w )
+        #DEBUG
+        # if (self.ID == '192.168.2.101192.168.2.110' and self.Lambda==0.01) or (self.ID == '192.168.2.110192.168.2.101' and self.Lambda==0.01):
+        #     #print ('>>>>>>> key',self.ID,'v',v,'mean',self.CF1/self.w )
+        #     pass
 
 
         # update covs (if any)
@@ -222,10 +225,11 @@ class incStat_cov:
 
         #print ('self.incStats[0].ID',self.incStats[0].ID,'self.incStats[1].ID',self.incStats[1].ID,'XX ID',ID)
         # Compute and update residule
+        #DEBUG
 #        if (ID == '192.168.2.101192.168.2.110' and self.incStats[not(inc)].Lambda==0.01) or (ID == '192.168.2.110192.168.2.101' and self.incStats[not(inc)].Lambda==0.01) :
-        if (ID == '192.168.2.1192.168.2.115' and self.incStats[not(inc)].Lambda==0.01) or (ID == '192.168.2.115192.168.2.1' and self.incStats[not(inc)].Lambda==0.01) :
-            print ('ID is:', ID, 'my_timeDiff', my_timeDiff )
-            print (self.lastRes[not(inc)])
+        # if (ID == '192.168.2.1192.168.2.115' and self.incStats[not(inc)].Lambda==0.01) or (ID == '192.168.2.115192.168.2.1' and self.incStats[not(inc)].Lambda==0.01) :
+        #     print ('ID is:', ID, 'my_timeDiff', my_timeDiff )
+        #     print (self.lastRes[not(inc)])
 
 
         res = (v - self.incStats[inc].mean()) 
@@ -288,30 +292,31 @@ class incStat_cov:
         #         # self.CF3 *= this_decay
         #         # self.CF3 /= other_decay
 
-        if abs(self.lastRes[not(inc)]/1.4186533805667382e-14-1.0) < 0.00000001 :
-            if self.onlyonce7 :
-                self.onlyonce7 = False
-                print ('keypoint CF3 #207', self.CF3, 'inc', inc)
-                self.CF3 *= 0.9997211921257476
-                self.CF3 /= 0.9985669764747996
-                # self.CF3 *= this_decay
-                # self.CF3 /= other_decay
-        if abs(self.lastRes[not(inc)]/1.4013235909192496e-14-1.0) < 0.00000001 :
-            if self.onlyonce6 :
-                self.onlyonce6 = False
-                print ('keypoint CF3 #267', self.CF3, 'inc', inc)
-                self.CF3 *= 0.9946660501016131
-                self.CF3 /= 0.9930813847351339
-                # self.CF3 *= this_decay
-                # self.CF3 /= other_decay
-        if abs(self.lastRes[not(inc)]/1.4208504063681235e-14-1.0) < 0.00000001 :
-            if self.onlyonce5 :
-                self.onlyonce5 = False
-                print ('keypoint CF3 #271', self.CF3, 'inc', inc)
-                self.CF3 *= 0.9999851664472873
-                self.CF3 /= 0.9998345876044842
-                # self.CF3 *= this_decay
-                # self.CF3 /= other_decay
+        #DEBUG
+        # if abs(self.lastRes[not(inc)]/1.4186533805667382e-14-1.0) < 0.00000001 :
+        #     if self.onlyonce7 :
+        #         self.onlyonce7 = False
+        #         print ('keypoint CF3 #207', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9997211921257476
+        #         self.CF3 /= 0.9985669764747996
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]/1.4013235909192496e-14-1.0) < 0.00000001 :
+        #     if self.onlyonce6 :
+        #         self.onlyonce6 = False
+        #         print ('keypoint CF3 #267', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9946660501016131
+        #         self.CF3 /= 0.9930813847351339
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
+        # if abs(self.lastRes[not(inc)]/1.4208504063681235e-14-1.0) < 0.00000001 :
+        #     if self.onlyonce5 :
+        #         self.onlyonce5 = False
+        #         print ('keypoint CF3 #271', self.CF3, 'inc', inc)
+        #         self.CF3 *= 0.9999851664472873
+        #         self.CF3 /= 0.9998345876044842
+        #         # self.CF3 *= this_decay
+        #         # self.CF3 /= other_decay
 
 
         if dadove == 'for':
@@ -327,16 +332,18 @@ class incStat_cov:
         self.CF3 += resid
         self.w3 += 1
         self.lastRes[inc] = res
-        if abs(self.CF3) > 0 and self.incStats[inc].Lambda == 0.01:
-            print ('other_decay', other_decay, 'this_decay', this_decay)
-            #print (self.incStats[inc].ID)
-            print ('res', res, 'other last_res', self.lastRes[not(inc)])
-            print ('resid', resid, 'v', v, 'mean1', self.incStats[inc].mean())
-            print ('CF3', self.CF3, 'dadove', dadove)
-            #print ('w3/2', self.w3/2, 'cov', self.CF3/self.w3*2)
-            #print ('w1 not inc', (self.incStats[not(inc)].w, 'cov_wrong', self.CF3/self.incStats[not(inc)].w)
-            print ('w1+w2', (self.incStats[not(inc)].w+self.incStats[inc].w), 'cov_wrong', self.CF3/(self.incStats[not(inc)].w+self.incStats[inc].w))
-            #sys.exit()
+
+        #DEBUG
+        # if abs(self.CF3) > 0 and self.incStats[inc].Lambda == 0.01:
+        #     print ('other_decay', other_decay, 'this_decay', this_decay)
+        #     #print (self.incStats[inc].ID)
+        #     print ('res', res, 'other last_res', self.lastRes[not(inc)])
+        #     print ('resid', resid, 'v', v, 'mean1', self.incStats[inc].mean())
+        #     print ('CF3', self.CF3, 'dadove', dadove)
+        #     #print ('w3/2', self.w3/2, 'cov', self.CF3/self.w3*2)
+        #     #print ('w1 not inc', (self.incStats[not(inc)].w, 'cov_wrong', self.CF3/self.incStats[not(inc)].w)
+        #     print ('w1+w2', (self.incStats[not(inc)].w+self.incStats[inc].w), 'cov_wrong', self.CF3/(self.incStats[not(inc)].w+self.incStats[inc].w))
+        #     #sys.exit()
 
         myid1=self.incStats[not(inc)].ID+'_'+str(self.incStats[not(inc)].Lambda)
         myid2=self.incStats[inc].ID+'_'+str(self.incStats[inc].Lambda)
@@ -450,6 +457,7 @@ class incStatDB:
                         self.limit) + '.\nObservation Rejected.')
             incS = incStat(Lambda, ID, 0 if isTypeDiff else init_time, isTypeDiff=isTypeDiff)
             self.HT[key] = incS #add new entry
+            #print('flows: ',len(self.HT))
         return incS
 
     # Registers covariance tracking for two streams, registers missing streams
@@ -483,6 +491,8 @@ class incStatDB:
         #     print ('inside update')
         incS = self.register(ID,Lambda,t,isTypeDiff)
         incS.insert(v,t)
+        if Lambda == 1 :
+            incS.time_value.append([t,v])
         return incS
 
     # Pulls current stats from the given ID

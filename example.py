@@ -3,6 +3,7 @@ import numpy as np
 import time
 import sys
 
+
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
 # For more information and citation, please see our NDSS'18 paper: Kitsune: An Ensemble of Autoencoders for Online Network Intrusion Detection
@@ -25,13 +26,16 @@ import sys
 # File location
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
 path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
+# path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
 
 packet_limit = np.Inf #the number of packets to process
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
 FMgrace = 5000 #the number of instances taken to learn the feature mapping (the ensemble's architecture)
+FMgrace = np.Inf
 ADgrace = 50000 #the number of instances used to train the anomaly detector (ensemble itself)
+ADgrace = np.Inf
 
 # Build Kitsune
 K = Kitsune(path,packet_limit,maxAE,FMgrace,ADgrace)
@@ -53,7 +57,13 @@ while True:
         break
     RMSEs.append(rmse)
 stop = time.time()
+
+K.FE.evaluate_stats()
+K.FE.export_flow_time_values()
+
 print("Complete ok. Time elapsed: "+ str(stop - start))
+
+sys.exit()
 
 import pandas as pd
 df = pd.DataFrame(collector)
