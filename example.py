@@ -25,8 +25,8 @@ import sys
 
 # File location
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
-path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
-# path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
+#path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
+path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
 
 packet_limit = np.Inf #the number of packets to process
 

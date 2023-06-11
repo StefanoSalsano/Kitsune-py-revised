@@ -211,9 +211,10 @@ class FE:
         #print(timestamp)
 
         #print (' >>>> counter',self.curPacketIndx)
-        if self.curPacketIndx > np.Inf :
-        # if self.curPacketIndx > 200 :
+        # if self.curPacketIndx > np.Inf :
+        if self.curPacketIndx > 20000 :
             self.evaluate_stats()
+            self.export_flow_time_values()
             sys.exit()
             
         return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
@@ -234,24 +235,43 @@ class FE:
     def evaluate_stats_dict(self, dictionary) :
 
         flow_counter = 0
+        flow_counter_other = 0
         packet_counter = 0
+        packet_counter_other = 0
         histogram = dict()
+        histogram_other = dict()
 
         for key, value in dictionary.items() :
             if value.time_value != [] :
-                flow_counter += 1
                 samples = len (value.time_value)
-                packet_counter += samples
-                if samples in histogram :
-                    histogram[samples] += 1
+                if (key.count('_') == 1) :
+                    flow_counter += 1
+                    packet_counter += samples
+                    if samples in histogram :
+                        histogram[samples] += 1
+                    else :
+                        histogram[samples] = 1
                 else :
-                    histogram[samples] = 1
+                    flow_counter_other += 1
+                    packet_counter_other += samples
+                    if samples in histogram_other :
+                        histogram_other[samples] += 1
+                    else :
+                        histogram_other[samples] = 1
+                
                 #print (key, value.time_value)
-        print ('num of flows',flow_counter)
+        print ('num of flows origin only',flow_counter)
         print ('num of packets',packet_counter)
         print (histogram)
         dict1 = OrderedDict(sorted(histogram.items()))
         print(dict1)
+
+        print ('num of flows origin destinaton',flow_counter_other)
+        print ('num of packets',packet_counter_other)
+        print (histogram_other)
+        dict1 = OrderedDict(sorted(histogram_other.items()))
+        print(dict1)
+
 
     def export_flow_time_values_dict(self, dictionary, out_dict) :
 

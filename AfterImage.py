@@ -468,14 +468,14 @@ class incStatDB:
         Lambda = self.get_lambda(Lambda)
 
         # Lookup both streams
-        incS1 = self.register(ID1+ID2,Lambda,init_time,isTypeDiff)
-        incS2 = self.register(ID2+ID1,Lambda,init_time,isTypeDiff)
+        incS1 = self.register(ID1+'_'+ID2,Lambda,init_time,isTypeDiff)
+        incS2 = self.register(ID2+'_'+ID1,Lambda,init_time,isTypeDiff)
 
         #check for pre-existing link
         for cov in incS1.covs:
             # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
             #     print ('IDs:',cov.incStats[0].ID,cov.incStats[1].ID)
-            if (cov.incStats[0].ID == ID2+ID1 and cov.incStats[1].ID ==ID1+ID2) or (cov.incStats[1].ID == ID2+ID1 and cov.incStats[0].ID ==ID1+ID2) :
+            if (cov.incStats[0].ID == ID2+'_'+ID1 and cov.incStats[1].ID ==ID1+'_'+ID2) or (cov.incStats[1].ID == ID2+'_'+ID1 and cov.incStats[0].ID ==ID1+'_'+ID2) :
                 # print('existing cov!')
                 return cov #there is a pre-exiting link
 
@@ -564,6 +564,10 @@ class incStatDB:
     def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
         # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
         #     print ('after image here')
+        if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
+            print ('after image here')
+            sys.exit()
+
         if stateUpdate :
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
@@ -580,7 +584,7 @@ class incStatDB:
         inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
         
         # Update cov tracker
-        inc_cov.update_cov(ID1+ID2,v1,t1, dadove='get2D')
+        inc_cov.update_cov(ID1+'_'+ID2,v1,t1, dadove='get2D')
         if level == 1:
             return inc_cov.get_stats1()
         else:
@@ -589,11 +593,11 @@ class incStatDB:
     # Updates and then pulls current 1D and 2D stats from the given IDs. Automatically registers previously unknown stream IDs
     def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1,counter=0):  # weight, mean, std
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
-        # if ((ID1+ID2)=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
+        # if ((ID1+'_'+ID2)=='00:14:1c:28:d6:06_01:80:c2:00:00:00' and Lambda == 5) :
         #     print ('second after image here')
-        meanID1_ID2 = state.update(ID1+ID2,v1,t1,Lambda,return_mean=True)
+        meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
-        return self.update_get_1D_Stats(ID1+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?

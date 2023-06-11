@@ -79,7 +79,7 @@ class netStat:
         #MAC.IP: Stats on src MAC-IP relationships
         MIstat =  np.zeros((3*len(self.Lambdas,)))
         for i in range(len(self.Lambdas)):
-            MIstat[(i*3):((i+1)*3)] = self.HT_MI.update_get_1D_Stats(srcMAC+srcIP, timestamp, datagramSize, self.Lambdas[i])
+            MIstat[(i*3):((i+1)*3)] = self.HT_MI.update_get_1D_Stats(srcMAC+'_'+srcIP, timestamp, datagramSize, self.Lambdas[i])
 
         # Host-Host BW: Stats on the dual traffic behavior between srcIP and dstIP
         HHstat =  np.zeros((7*len(self.Lambdas,)))
@@ -89,7 +89,7 @@ class netStat:
         # Host-Host Jitter:
         HHstat_jit =  np.zeros((3*len(self.Lambdas,)))
         for i in range(len(self.Lambdas)):
-            HHstat_jit[(i*3):((i+1)*3)] = self.HT_jit.update_get_1D_Stats(srcIP+dstIP, timestamp, 0, self.Lambdas[i],isTypeDiff=True)
+            HHstat_jit[(i*3):((i+1)*3)] = self.HT_jit.update_get_1D_Stats(srcIP+'_'+dstIP, timestamp, 0, self.Lambdas[i],isTypeDiff=True)
 
         # Host-Host BW: Stats on the dual traffic behavior between srcIP and dstIP
         HpHpstat =  np.zeros((7*len(self.Lambdas,)))
@@ -100,7 +100,7 @@ class netStat:
             for i in range(len(self.Lambdas)):
                 if srcIP == srcIP + srcProtocol :
                     print ('collision', srcIP, srcProtocol)
-                HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP + srcProtocol, dstIP + dstProtocol, timestamp, datagramSize, self.Lambdas[i],counter=counter)
+                HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP +'_'+ srcProtocol, dstIP +'_'+ dstProtocol, timestamp, datagramSize, self.Lambdas[i],counter=counter)
 
         return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
 
