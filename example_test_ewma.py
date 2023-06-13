@@ -2,6 +2,7 @@ import json
 import FeatureWindow as fw
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 KEY = '192.168.2.108_1'
 KEY = '192.168.2.110_114.114.114.114_1'
@@ -34,8 +35,7 @@ key =stats_dict[flow_type]['list'][flow_number][1]
 print (key)
 print (len(timevalues_dict[key]))
 
-use_tau = TAU_10
-
+use_tau = [TAU_01, TAU_1, TAU_10, TAU_100]
 
 timestamped_list = fw.TimestampedList()
 for couple in timevalues_dict[key] :
@@ -43,24 +43,50 @@ for couple in timevalues_dict[key] :
 
 ewma_times=[]
 ewma_values=[]
-ewma_rate_values=[]
-timestamped_list.evaluate_ewma(use_tau, times=ewma_times, ewma_values=ewma_values, ewma_rate_values=ewma_rate_values)
+ewma_rate_values_list=[]
+rate_estimate_list=[]
+
+for i in range (len(use_tau)) :
+    ewma_times=[]
+    new_list = list()
+    ewma_rate_values_list.append(new_list)
+    timestamped_list.evaluate_ewma(use_tau[i], times=ewma_times, ewma_values=ewma_values, ewma_rate_values=new_list)
+
 np_ewma_times = np.asarray(ewma_times)
 np_ewma_times = np_ewma_times - ewma_times[0]
 
-timestamped_list.process_all(use_tau)
+for i in range (len(use_tau)) :
+    new_list = list()
+    rate_estimate_list.append(new_list)
+    for j in range(len(ewma_rate_values_list[i])) :
+        w = ewma_rate_values_list[i][j]
+        if w <= 1 :
+            new_list.append (0)
+        else :
+            T = - use_tau[i] * math.log(1.0 - 1.0/w)
+            new_list.append(1/T)
 
-# timestamped_list.print_sorted_list()
 
-my_times=[]
-my_values=[]
+# for i in range (len(use_tau)) :
+#     plt.plot(np_ewma_times[1700:1710], ewma_rate_values_list[i][1700:1710])
+
+for i in range (len(use_tau)) :
+    plt.plot(np_ewma_times[1700:1710], rate_estimate_list[i][1700:1710])
 
 
-timestamped_list.get_time_values(times=my_times,values=my_values )
-timestamped_list.sample_and_hold(times=my_times,values=my_values)
+# timestamped_list.process_all(use_tau)
 
-np_times = np.asarray(my_times)
-np_times = np_times - my_times[0]
+# # timestamped_list.print_sorted_list()
+
+# my_times=[]
+# my_values=[]
+
+
+# timestamped_list.get_time_values(times=my_times,values=my_values )
+# timestamped_list.sample_and_hold(times=my_times,values=my_values)
+
+# np_times = np.asarray(my_times)
+# np_times = np_times - my_times[0]
 
 
 
@@ -71,4 +97,3 @@ np_times = np_times - my_times[0]
 # flow_number = 12
 #plt.plot(np_times[6800:6835],my_values[6800:6835])
 # plt.plot(np_times[6799:6839],my_values[6799:6839])
-plt.plot(np_ewma_times[1700:1710], ewma_rate_values[1700:1710])

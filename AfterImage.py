@@ -492,6 +492,7 @@ class incStatDB:
         incS = self.register(ID,Lambda,t,isTypeDiff)
         incS.insert(v,t)
         if Lambda == 1 :
+            #the time_value array attribute is populated only for Lambda == 1
             incS.time_value.append([t,v])
         return incS
 

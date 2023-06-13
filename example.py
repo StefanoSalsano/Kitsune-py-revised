@@ -27,8 +27,13 @@ import sys
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
 #path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
 path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
+path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
+
+
 
 packet_limit = np.Inf #the number of packets to process
+# packet_limit = 10000 #the number of packets to process
+
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer

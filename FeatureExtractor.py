@@ -130,8 +130,7 @@ class FE:
                 srcIP = row[17]
                 dstIP = row[18]
                 IPtype = 1
-            srcproto = row[6] + row[
-                8]  # UDP or TCP port: the concatenation of the two port strings will will results in an OR "[tcp|udp]"
+            srcproto = row[6] + row[8]  # UDP or TCP port: the concatenation of the two port strings will will results in an OR "[tcp|udp]"
             dstproto = row[7] + row[9]  # UDP or TCP port
             srcMAC = row[2]
             dstMAC = row[3]
@@ -212,7 +211,8 @@ class FE:
 
         #print (' >>>> counter',self.curPacketIndx)
         # if self.curPacketIndx > np.Inf :
-        if self.curPacketIndx > 20000 :
+        if self.curPacketIndx > self.limit :
+            print ("SHOULD NOT EXIT HERE...")
             self.evaluate_stats()
             self.export_flow_time_values()
             sys.exit()
@@ -233,6 +233,12 @@ class FE:
 
 
     def evaluate_stats_dict(self, dictionary) :
+        """
+        evaluates some statistics on the flows 
+
+        evaluates the number of flows and the histogram 
+        of the number of packets for each flow
+        """
 
         flow_counter = 0
         flow_counter_other = 0
@@ -241,36 +247,53 @@ class FE:
         histogram = dict()
         histogram_other = dict()
 
+        sorted_list = []
+        sorted_list_other = []
+
+
         for key, value in dictionary.items() :
             if value.time_value != [] :
                 samples = len (value.time_value)
                 if (key.count('_') == 1) :
+                    #in this case there is only the source
                     flow_counter += 1
                     packet_counter += samples
                     if samples in histogram :
                         histogram[samples] += 1
                     else :
                         histogram[samples] = 1
+                    sorted_list.append((samples,key))
                 else :
+                    #it is source/dest or conversation
                     flow_counter_other += 1
                     packet_counter_other += samples
                     if samples in histogram_other :
                         histogram_other[samples] += 1
                     else :
                         histogram_other[samples] = 1
+                    sorted_list_other.append((samples,key))
                 
                 #print (key, value.time_value)
         print ('num of flows origin only',flow_counter)
         print ('num of packets',packet_counter)
         print (histogram)
-        dict1 = OrderedDict(sorted(histogram.items()))
-        print(dict1)
+        # dict1 = OrderedDict(sorted(histogram.items()))
+        # print(dict1)
+        sorted_list = sorted(sorted_list)
+        sorted_list.reverse()
+        print(sorted_list)
 
         print ('num of flows origin destinaton',flow_counter_other)
         print ('num of packets',packet_counter_other)
         print (histogram_other)
-        dict1 = OrderedDict(sorted(histogram_other.items()))
-        print(dict1)
+        # dict1 = OrderedDict(sorted(histogram_other.items()))
+        # print(dict1)
+        sorted_list_other = sorted(sorted_list_other)
+        sorted_list_other.reverse()
+        print(sorted_list_other)
+
+        return histogram, sorted_list, histogram_other, sorted_list_other
+
 
 
     def export_flow_time_values_dict(self, dictionary, out_dict) :
@@ -294,6 +317,12 @@ class FE:
 
 
     def export_flow_time_values(self) :
+        """
+        export time values series for all flows
+
+        it assumes that the time_value array is added to
+        HT attribute of nstat.HT_H and of nstat.HT_Hp
+        """
         out_dict = dict()
         self.export_flow_time_values_dict(self.nstat.HT_H.HT,out_dict)
         self.export_flow_time_values_dict(self.nstat.HT_Hp.HT,out_dict)
@@ -303,9 +332,16 @@ class FE:
 
 
     def evaluate_stats(self) :
-        self.evaluate_stats_dict(self.nstat.HT_H.HT)
-        self.evaluate_stats_dict(self.nstat.HT_Hp.HT)
+        histo_source, list_source, histo_sourcedest, list_sourcedest = self.evaluate_stats_dict(self.nstat.HT_H.HT)
+        histo_null, list_null, histo_conv, list_conv = self.evaluate_stats_dict(self.nstat.HT_Hp.HT)
 
+        my_stats = dict()
+        my_stats ['source'] = {'histo' : histo_source, 'list' : list_source}
+        my_stats ['sourcedest'] = {'histo' : histo_sourcedest, 'list' : list_sourcedest}
+        my_stats ['conversation'] = {'histo' : histo_conv, 'list' : list_conv}
+        json_string = json.dumps(my_stats, indent=2)
+        with open('json_stats.json', 'w') as outfile:
+            outfile.write(json_string)
 
     def pcap2tsv_with_tshark(self):
         print('Parsing with tshark...')
