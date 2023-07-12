@@ -565,9 +565,9 @@ class incStatDB:
     def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
         # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
         #     print ('after image here')
-        if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
-            print ('after image here')
-            sys.exit()
+        # if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
+        #     print ('after image here')
+        #     sys.exit()
 
         if stateUpdate :
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
