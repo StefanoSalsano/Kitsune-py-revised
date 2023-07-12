@@ -102,7 +102,10 @@ class netStat:
                     print ('collision', srcIP, srcProtocol)
                 HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP +'_'+ srcProtocol, dstIP +'_'+ dstProtocol, timestamp, datagramSize, self.Lambdas[i],counter=counter)
 
-        return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))  # concatenation of stats into one stat vector
+        # add timestamps and keys to return array
+        tstamp_key = np.array([timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol])
+
+        return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat, tstamp_key))  # concatenation of stats into one stat vector
 
     def getNetStatHeaders(self):
         MIstat_headers = []
