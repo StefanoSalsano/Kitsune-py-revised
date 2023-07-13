@@ -103,7 +103,7 @@ class netStat:
                 HpHpstat[(i*7):((i+1)*7)] = self.HT_Hp.update_get_1D2D_Stats(srcIP +'_'+ srcProtocol, dstIP +'_'+ dstProtocol, timestamp, datagramSize, self.Lambdas[i],counter=counter)
 
         # add timestamps and keys to return array
-        tstamp_key = np.array([timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol])
+        tstamp_key = np.array([timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol, datagramSize])
 
         return np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat, tstamp_key))  # concatenation of stats into one stat vector
 

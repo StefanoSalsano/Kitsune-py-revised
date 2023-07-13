@@ -12,8 +12,6 @@ When a packet is processed, give it the features of its related flows from the
 switch dict. If the flow is not in the switch object, give it the
 featues initialised to 1, as if it were a new flow.
 
-TODO: check how to handle the jitter on the first packet.
-
 for LRU sync case: update Afterimage.py > incStatDB > register/register_cov
 
 for LRU async case: consider delay in transmitting updated LRU to switch
@@ -44,13 +42,18 @@ with open(PATH_OUT, 'w') as out_file:
             print(i)
         # get next features vector
         features = extractor.get_next_vector()
+        if len(features) == 0:
+            break # no packets left
         # unpack features
-        Hstat = features[:3]
-        MIstat = features[3:6]
-        HHstat = features[6:13]
-        HHstat_jit = features[13:16]
-        HpHpstat = features[16:23]
-        timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol = features[23:]
+        Hstat = features[:15]
+        MIstat = features[15:30]
+        HHstat = features[30:65]
+        HHstat_jit = features[65:80]
+        HpHpstat = features[80:115]
+        timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol, pkt_len = features[115:]
+
+        timestamp = float(timestamp)
+        pkt_len = int(pkt_len)
 
         # update lru_controller
         lru_controller[srcIP] = Hstat
@@ -82,10 +85,34 @@ with open(PATH_OUT, 'w') as out_file:
             switch_cur = switch_new
         
         # get features from switch_cur and write them to file
+        # if features are not in switch_cur, initialise them to 1st packet
         if srcIP in switch_cur:
             Hstat = switch_cur[srcIP]
         else:
-            
-
-        if len(features) == 0:
-            break # no packets left
+            Hstat = np.array([1, pkt_len, 0]*5)
+        if srcMAC+'_'+srcIP in switch_cur:
+            MIstat = switch_cur[srcMAC+'_'+srcIP]
+        else:
+            MIstat = np.array([1, pkt_len, 0]*5)
+        if srcIP+'_'+dstIP in switch_cur:
+            HHstat = switch_cur[srcIP+'_'+dstIP]
+        else:
+            HHstat = np.array([1, pkt_len, 0, pkt_len, 0, 0, 0]*5)
+        if srcIP+'_'+dstIP+'_jit' in switch_cur:
+            HHstat_jit = switch_cur[srcIP+'_'+dstIP+'_jit']
+        else:
+            HHstat_jit = np.array([1, 0, 0]*5)
+        if srcProtocol == 'arp':
+            if srcMAC+'_'+dstMAC in switch_cur:
+                HpHpstat = switch_cur[srcMAC+'_'+dstMAC]
+            else:
+                HpHpstat = np.array([1, pkt_len, 0, pkt_len, 0, 0, 0]*5)
+        else:
+            if srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol in switch_cur:
+                HpHpstat = switch_cur[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol]
+            else:
+                HpHpstat = np.array([1, pkt_len, 0, pkt_len, 0, 0, 0]*5)
+        # combine in one vector
+        features = np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))
+        # write to file
+        out_file.write(','.join(map(str, features)) + '\n')
