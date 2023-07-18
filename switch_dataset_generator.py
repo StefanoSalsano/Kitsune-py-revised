@@ -22,10 +22,18 @@ add keys to return vector in netStat.py > netStat > updateGetStats
 from FeatureExtractor import *
 import numpy as np
 from lru import LRU
+import argparse
+
+# argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', help="input file path")
+parser.add_argument('-o', help="output file path")
+args = parser.parse_args()
 
 
-PATH_IN = "Mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
-PATH_OUT = "Mirai2000_switch.csv"
+
+PATH_IN = args.i #the pcap, pcapng, or tsv file to process.
+PATH_OUT = args.o
 
 LIMIT = np.Inf #the number of packets to process
 
@@ -38,7 +46,7 @@ extractor = FE(PATH_IN, LIMIT)
 with open(PATH_OUT, 'w') as out_file:
     while True:
         i += 1
-        if i % 1000 == 0:
+        if i % 10000 == 0:
             print(i)
         # get next features vector
         features = extractor.get_next_vector(lru=dict(lru_controller.items()))
