@@ -441,35 +441,44 @@ class incStatDB:
         return Lambda
 
     # Registers a new stream. init_time: init lastTimestamp of the incStat
-    def register(self,ID,Lambda=1,init_time=0,isTypeDiff=False):
+    def register(self,ID,Lambda=1,init_time=0,isTypeDiff=False,lru=None,ID_lru=None):
         #Default Lambda?
         Lambda = self.get_lambda(Lambda)
 
+        if ID_lru is None:
+            key_lru = ('jitter'+ID if isTypeDiff else ID)
+        else:
+            key_lru = ID_lru
+        # print(f"key_lru: {key_lru}")
+
         #Retrieve incStat
         key = ('jitter'+ID if isTypeDiff else ID)+"_"+str(Lambda)
-        incS = self.HT.get(key)
-        if incS is None: #does not already exist
-            # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-            #     print ('inside register, creating')
-            if len(self.HT) + 1 > self.limit:
-                raise LookupError(
-                    'Adding Entry:\n' + key + '\nwould exceed incStatHT 1D limit of ' + str(
-                        self.limit) + '.\nObservation Rejected.')
+        # print(f"key:     {key}")
+
+        if key_lru in lru:
+            # get stat
+            # print("get")
+            incS = self.HT.get(key)
+        else:
+            # init stat
+            # print("init")
+            # self.not_found_ctr += 1
+            # print(f"not found: {self.not_found_ctr}")
             incS = incStat(Lambda, ID, 0 if isTypeDiff else init_time, isTypeDiff=isTypeDiff)
             self.HT[key] = incS #add new entry
-            #print('flows: ',len(self.HT))
         return incS
 
     # Registers covariance tracking for two streams, registers missing streams
-    def register_cov(self,ID1,ID2,Lambda=1,init_time=0,isTypeDiff=False):
+    def register_cov(self,ID1,ID2,Lambda=1,init_time=0,isTypeDiff=False,lru=None):
         # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
         #     print ('register_cov')
         #Default Lambda?
         Lambda = self.get_lambda(Lambda)
 
         # Lookup both streams
-        incS1 = self.register(ID1+'_'+ID2,Lambda,init_time,isTypeDiff)
-        incS2 = self.register(ID2+'_'+ID1,Lambda,init_time,isTypeDiff)
+        incS1 = self.register(ID1+'_'+ID2,Lambda,init_time,isTypeDiff, lru=lru)
+        incS2 = self.register(ID2+'_'+ID1,Lambda,init_time,isTypeDiff, lru=lru,
+                              ID_lru=ID1+'_'+ID2)
 
         #check for pre-existing link
         for cov in incS1.covs:
@@ -486,10 +495,10 @@ class incStatDB:
         return inc_cov
 
     # updates/registers stream
-    def update(self,ID,t,v,Lambda=1,isTypeDiff=False):
+    def update(self,ID,t,v,Lambda=1,isTypeDiff=False, lru=None):
         # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
         #     print ('inside update')
-        incS = self.register(ID,Lambda,t,isTypeDiff)
+        incS = self.register(ID,Lambda,t,isTypeDiff, lru=lru)
         incS.insert(v,t)
         if Lambda == 1 :
             #the time_value array attribute is populated only for Lambda == 1
@@ -562,7 +571,8 @@ class incStatDB:
         return [np.sqrt(rad),np.sqrt(mag)]
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
-    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
+    def update_get_1D_Stats(self, ID, t, v, Lambda=1, isTypeDiff=False,
+                            stateUpdate=True, lru=None):  # weight, mean, std
         # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
         #     print ('after image here')
         # if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
@@ -571,18 +581,18 @@ class incStatDB:
 
         if stateUpdate :
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
-        incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
+        incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff, lru=lru)
         return incS.allstats_1D()
 
 
     # Updates and then pulls current correlative stats between the given IDs. Automatically registers previously unknown stream IDs, and cov tracking
     #Note: AfterImage does not currently support Diff Type streams for correlational statistics.
-    def update_get_2D_Stats(self,ID1,ID2,t1,v1,Lambda=1,level=1):  #level=  1:cov,pcc  2:radius,magnitude,cov,pcc
+    def update_get_2D_Stats(self,ID1,ID2,t1,v1,Lambda=1,level=1, lru=None):  #level=  1:cov,pcc  2:radius,magnitude,cov,pcc
         #state.update2D(ID1, ID2, v1, t1, Lambda)
         #retrieve/add cov tracker
         # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
         #     print('update_get_2D_Stats',ID1,ID2)
-        inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
+        inc_cov = self.register_cov(ID1, ID2, Lambda, t1, lru=lru)
         
         # Update cov tracker
         inc_cov.update_cov(ID1+'_'+ID2,v1,t1, dadove='get2D')
@@ -592,13 +602,13 @@ class incStatDB:
             return inc_cov.get_stats2()
 
     # Updates and then pulls current 1D and 2D stats from the given IDs. Automatically registers previously unknown stream IDs
-    def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1,counter=0):  # weight, mean, std
+    def update_get_1D2D_Stats(self, ID1,ID2,t1,v1,Lambda=1,counter=0, lru=None):  # weight, mean, std
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         # if ((ID1+'_'+ID2)=='00:14:1c:28:d6:06_01:80:c2:00:00:00' and Lambda == 5) :
         #     print ('second after image here')
         meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
-        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False, lru=lru) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2, lru=lru)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?

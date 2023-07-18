@@ -108,7 +108,7 @@ class FE:
             self.limit = len(self.scapyin)
             print("Loaded " + str(len(self.scapyin)) + " Packets.")
 
-    def get_next_vector(self):
+    def get_next_vector(self, lru=None):
         if self.curPacketIndx == self.limit:
             if self.parse_type == 'tsv':
                 self.tsvinf.close()
@@ -148,6 +148,9 @@ class FE:
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = row[2]  # src MAC
                     dstIP = row[3]  # dst MAC
+                    # to solve configuration test protocol bug
+                    if srcIP == dstIP:
+                        dstIP = dstIP+"ctp"
             # if self.curPacketIndx == 45 :
             #     print ('srcproto', srcproto, srcIP, dstIP)
             if srcproto == '' :
@@ -197,7 +200,11 @@ class FE:
                     IPtype = 0
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = packet.src  # src MAC
-                    dstIP = packet.dst  # dst MAC
+                    # to solve configuration test protocol bug
+                    if packet.src == packet.dst:
+                        dstIP = packet.dst+"ctp"  # dst MAC
+                    else:
+                        dstIP = packet.dst  # dst MAC
             if srcproto == '' :
                 srcproto = 'null'
             if dstproto == '' :
@@ -217,9 +224,10 @@ class FE:
             self.export_flow_time_values()
             sys.exit()
             
-        return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP, srcproto, dstIP, dstproto,
-                                                int(framelen),
-                                                float(timestamp),self.curPacketIndx)
+        return self.nstat.updateGetStats(IPtype, srcMAC, dstMAC, srcIP,
+                                         srcproto, dstIP, dstproto,
+                                         int(framelen), float(timestamp),
+                                         self.curPacketIndx, lru=lru)
 
 
         ### Extract Features
