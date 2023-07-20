@@ -28,6 +28,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', help="input file path")
 parser.add_argument('-o', help="output file path")
+parser.add_argument('--lru', help="number of elements saved in the LRU cache")
 args = parser.parse_args()
 
 
@@ -39,7 +40,7 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
-lru_controller = LRU(100)
+lru_controller = LRU(args.lru)
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
