@@ -29,6 +29,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', help="input file path")
 parser.add_argument('-o', help="output file path")
+parser.add_argument('--lru', help="number of elements saved in the LRU cache")
 args = parser.parse_args()
 
 
@@ -40,7 +41,8 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
-lru_controller = LRU(100)
+lru_controller = LRU(args.lru)
+ctr = dict()
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
@@ -63,6 +65,16 @@ with open(PATH_OUT, 'w') as out_file:
 
         timestamp = float(timestamp)
         pkt_len = int(pkt_len)
+
+        # flow counter using dict
+        ctr[srcIP] = 1
+        ctr[srcMAC+'_'+srcIP] = 1
+        ctr[srcIP+'_'+dstIP] = 1
+        ctr[srcIP+'_'+dstIP+'_jit'] = 1
+        if srcProtocol == 'arp':
+            ctr[srcMAC+'_'+dstMAC] = 1
+        else:
+            ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
 
         # update lru_controller
         lru_controller[srcIP] = Hstat
@@ -125,3 +137,6 @@ with open(PATH_OUT, 'w') as out_file:
         features = np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))
         # write to file
         out_file.write(','.join(map(str, features)) + '\n')
+
+# final count
+print(f"flow count: {len(ctr)}")
