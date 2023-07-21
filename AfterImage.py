@@ -455,10 +455,13 @@ class incStatDB:
         key = ('jitter'+ID if isTypeDiff else ID)+"_"+str(Lambda)
         # print(f"key:     {key}")
 
+        incS = None
         if key_lru in lru:
             # get stat
             # print("get")
             incS = self.HT.get(key)
+        if incS is not None:
+            return incS
         else:
             # init stat
             # print("init")

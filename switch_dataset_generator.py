@@ -40,7 +40,7 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
-lru_controller = LRU(args.lru)
+lru_controller = LRU(int(args.lru))
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
