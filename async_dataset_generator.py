@@ -41,7 +41,7 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
-lru_controller = LRU(args.lru)
+lru_controller = LRU(int(args.lru))
 ctr = dict()
 
 # init feature extractor
