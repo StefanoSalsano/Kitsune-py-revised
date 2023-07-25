@@ -29,7 +29,9 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', help="input file path")
 parser.add_argument('-o', help="output file path")
-parser.add_argument('--lru', help="number of elements saved in the LRU cache")
+parser.add_argument('-n', help="number of elements saved in the LRU cache")
+parser.add_argument('-t', default=0.1, type=int, help="LRU cache update interval")
+parser.add_argument('-d', default=0.03, type=int, help="LRU cache update delay")
 args = parser.parse_args()
 
 
@@ -41,7 +43,7 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
-lru_controller = LRU(int(args.lru))
+lru_controller = LRU(int(args.n))
 ctr = dict()
 
 # init feature extractor
@@ -92,7 +94,7 @@ with open(PATH_OUT, 'w') as out_file:
             switch_cur = dict()
             prev_timestamp = timestamp
         
-        if timestamp - prev_timestamp > 0.1:
+        if timestamp - prev_timestamp > args.t:
             # # unlikely case in which more than 0.07s have passed since last packet
             # if switch_cur != switch_new:
             #     # update switch_cur
@@ -101,7 +103,7 @@ with open(PATH_OUT, 'w') as out_file:
             # update switch_new
             switch_new = dict(lru_controller.items())
             prev_timestamp = timestamp
-        elif timestamp - prev_timestamp > 0.03:
+        elif timestamp - prev_timestamp > args.d:
             # update switch_cur
             switch_cur = switch_new
         
