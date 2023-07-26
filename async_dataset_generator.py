@@ -24,14 +24,20 @@ from FeatureExtractor import *
 import numpy as np
 import argparse
 
+def compare_exact(first, second):
+    """Return whether two dicts of arrays are exactly equal"""
+    if first.keys() != second.keys():
+        return False
+    return all(np.array_equal(first[key], second[key]) for key in first)
+
 
 # argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', help="input file path")
 parser.add_argument('-o', help="output file path")
 parser.add_argument('-n', help="number of elements saved in the LRU cache")
-parser.add_argument('-t', default=0.1, type=int, help="LRU cache update interval")
-parser.add_argument('-d', default=0.03, type=int, help="LRU cache update delay")
+parser.add_argument('-t', default=0.1, type=float, help="LRU cache update interval")
+parser.add_argument('-d', default=0.03, type=float, help="LRU cache update delay")
 args = parser.parse_args()
 
 
@@ -45,6 +51,8 @@ LIMIT = np.Inf #the number of packets to process
 i = 0
 lru_controller = LRU(int(args.n))
 ctr = dict()
+db_init_count = 0
+lru_init_count = 0
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
@@ -95,10 +103,11 @@ with open(PATH_OUT, 'w') as out_file:
             prev_timestamp = timestamp
         
         if timestamp - prev_timestamp > args.t:
-            # # unlikely case in which more than 0.07s have passed since last packet
+            # case in which more than t - d have passed since last packet
+            if not compare_exact(switch_cur, switch_new):
             # if switch_cur != switch_new:
-            #     # update switch_cur
-            #     switch_cur = switch_new
+                # update switch_cur
+                switch_cur = switch_new
 
             # update switch_new
             switch_new = dict(lru_controller.items())
@@ -106,35 +115,54 @@ with open(PATH_OUT, 'w') as out_file:
         elif timestamp - prev_timestamp > args.d:
             # update switch_cur
             switch_cur = switch_new
+
+        # count new flows
+        if Hstat[0] == '1.0':
+            db_init_count +=1
+        if MIstat[0] == '1.0':
+            db_init_count +=1
+        if HHstat[0] == '1.0':
+            db_init_count +=1
+        if HHstat_jit[0] == '1.0':
+            db_init_count +=1
+        if HpHpstat[0] == '1.0':
+            db_init_count +=1
         
         # get features from switch_cur and write them to file
         # if features are not in switch_cur, initialise them to 1st packet
+        # count new flows
         if srcIP in switch_cur:
             Hstat = switch_cur[srcIP]
         else:
             Hstat = np.array([1, pkt_len, 0]*5)
+            lru_init_count += 1
         if srcMAC+'_'+srcIP in switch_cur:
             MIstat = switch_cur[srcMAC+'_'+srcIP]
         else:
             MIstat = np.array([1, pkt_len, 0]*5)
+            lru_init_count += 1
         if srcIP+'_'+dstIP in switch_cur:
             HHstat = switch_cur[srcIP+'_'+dstIP]
         else:
             HHstat = np.array([1, pkt_len, 0, pkt_len, 0, 0, 0]*5)
+            lru_init_count += 1
         if srcIP+'_'+dstIP+'_jit' in switch_cur:
             HHstat_jit = switch_cur[srcIP+'_'+dstIP+'_jit']
         else:
             HHstat_jit = np.array([1, 0, 0]*5)
+            lru_init_count += 1
         if srcProtocol == 'arp':
             if srcMAC+'_'+dstMAC in switch_cur:
                 HpHpstat = switch_cur[srcMAC+'_'+dstMAC]
             else:
                 HpHpstat = np.array([1, pkt_len, 0, pkt_len, 0, 0, 0]*5)
+                lru_init_count += 1
         else:
             if srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol in switch_cur:
                 HpHpstat = switch_cur[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol]
             else:
                 HpHpstat = np.array([1, pkt_len, 0, pkt_len, 0, 0, 0]*5)
+                lru_init_count += 1
         # combine in one vector
         features = np.concatenate((Hstat, MIstat, HHstat, HHstat_jit, HpHpstat))
         # write to file
@@ -142,3 +170,5 @@ with open(PATH_OUT, 'w') as out_file:
 
 # final count
 print(f"flow count: {len(ctr)}")
+print(f"db init count: {db_init_count}")
+print(f"lru init count: {lru_init_count}")
