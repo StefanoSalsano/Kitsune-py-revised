@@ -26,9 +26,9 @@ import argparse
 
 # argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', help="input file path")
-parser.add_argument('-o', help="output file path")
-parser.add_argument('--lru', help="number of elements saved in the LRU cache")
+parser.add_argument('-i', help="input file path", required=True)
+parser.add_argument('-o', help="output file path", required=True)
+parser.add_argument('-n', type=int, help="number of elements saved in the LRU cache", required=True)
 args = parser.parse_args()
 
 
@@ -40,7 +40,7 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
-lru_controller = LRU(int(args.lru))
+lru_controller = LRU(args.n)
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
@@ -54,6 +54,7 @@ with open(PATH_OUT, 'w') as out_file:
         if len(features) == 0:
             break # no packets left
 
+        print(i)
 
         # if i < 1000 and i != 1:
         #     continue
@@ -73,14 +74,16 @@ with open(PATH_OUT, 'w') as out_file:
         pkt_len = int(pkt_len)
 
         # update lru_controller
-        lru_controller[srcIP] = Hstat
-        lru_controller[srcMAC+'_'+srcIP] = MIstat
-        lru_controller[srcIP+'_'+dstIP] = HHstat
-        lru_controller['jitter'+srcIP+'_'+dstIP] = HHstat_jit
+        lru_controller[srcIP] = 1
+        lru_controller[srcMAC+'_'+srcIP] = 1
+        lru_controller[srcIP+'_'+dstIP] = 1
+        lru_controller['jitter'+srcIP+'_'+dstIP] = 1
         if srcProtocol == 'arp':
-            lru_controller[srcMAC+'_'+dstMAC] = HpHpstat
+            lru_controller[srcMAC+'_'+dstMAC] = 1
         else:
-            lru_controller[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = HpHpstat
+            lru_controller[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
+
+        print(srcIP+'_'+dstIP, 'len', len(lru_controller))
 
         # select only features
         features = features[:115]
