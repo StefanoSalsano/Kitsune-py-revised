@@ -124,10 +124,13 @@ class incStat:
         return math.sqrt(A)
 
     #calculates and pulls all stats on this stream
-    def allstats_1D(self):
+    def allstats_1D(self, for2D=False):
         self.cur_mean = self.CF1 / self.w
-        self.cur_var = abs(self.CF2 / self.w - math.pow(self.cur_mean, 2))
-        return [self.w, self.cur_mean, self.cur_var]
+        if for2D:
+            return [self.w, self.cur_mean, self.std()]
+        else:
+            self.cur_var = abs(self.CF2 / self.w - math.pow(self.cur_mean, 2))
+            return [self.w, self.cur_mean, self.cur_var]
 
     #calculates and pulls all stats on this stream, and stats shared with the indicated stream
     def allstats_2D(self, ID2):
@@ -396,7 +399,8 @@ class incStat_cov:
 
     # calculates and pulls all correlative stats AND 2D stats from both streams (incStat)
     def get_stats2(self):
-        return [self.incStats[0].radius([self.incStats[1]]),self.incStats[0].magnitude([self.incStats[1]]),self.cov(), self.pcc()]
+        # return [self.incStats[0].radius([self.incStats[1]]),self.incStats[0].magnitude([self.incStats[1]]),self.cov(), self.pcc()]
+        return [self.incStats[0].magnitude([self.incStats[1]]), self.incStats[0].radius([self.incStats[1]]),self.cov(), self.pcc()]
 
     # calculates and pulls all correlative stats AND 2D stats AND the regular stats from both streams (incStat)
     def get_stats3(self):
@@ -441,7 +445,7 @@ class incStatDB:
         return Lambda
 
     # Registers a new stream. init_time: init lastTimestamp of the incStat
-    def register(self,ID,Lambda=1,init_time=0,isTypeDiff=False,lru=None,ID_lru=None):
+    def register(self,ID,Lambda=1,init_time=0,isTypeDiff=False,lru=None,ID_lru=None,for2D=False):
         #Default Lambda?
         Lambda = self.get_lambda(Lambda)
 
@@ -456,7 +460,7 @@ class incStatDB:
         # print(f"key:     {key}")
 
         incS = None
-        if key_lru in lru:
+        if key_lru in lru or for2D:
             # get stat
             # print("get")
             incS = self.HT.get(key)
@@ -479,7 +483,8 @@ class incStatDB:
         Lambda = self.get_lambda(Lambda)
 
         # Lookup both streams
-        incS1 = self.register(ID1+'_'+ID2,Lambda,init_time,isTypeDiff, lru=lru)
+        incS1 = self.register(ID1+'_'+ID2,Lambda,init_time,isTypeDiff, lru=lru,
+                              for2D=True)
         incS2 = self.register(ID2+'_'+ID1,Lambda,init_time,isTypeDiff, lru=lru,
                               ID_lru=ID1+'_'+ID2)
 
@@ -575,7 +580,7 @@ class incStatDB:
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
     def update_get_1D_Stats(self, ID, t, v, Lambda=1, isTypeDiff=False,
-                            stateUpdate=True, lru=None):  # weight, mean, std
+                            stateUpdate=True, lru=None, for2D=False):  # weight, mean, std
         # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
         #     print ('after image here')
         # if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
@@ -585,8 +590,10 @@ class incStatDB:
         if stateUpdate :
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff, lru=lru)
-        return incS.allstats_1D()
-
+        if for2D:
+            return incS.allstats_1D(for2D=True)
+        else:
+            return incS.allstats_1D()
 
     # Updates and then pulls current correlative stats between the given IDs. Automatically registers previously unknown stream IDs, and cov tracking
     #Note: AfterImage does not currently support Diff Type streams for correlational statistics.
@@ -611,7 +618,8 @@ class incStatDB:
         #     print ('second after image here')
         meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
-        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False, lru=lru) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2, lru=lru)
+        # return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False, lru=lru) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2, lru=lru)
+        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False,lru=lru,for2D=True) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2, lru=lru)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?
