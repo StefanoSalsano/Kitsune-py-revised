@@ -40,6 +40,7 @@ LIMIT = np.Inf #the number of packets to process
 
 
 i = 0
+ctr = dict()
 lru_controller = LRU(args.n)
 
 # init feature extractor
@@ -54,7 +55,7 @@ with open(PATH_OUT, 'w') as out_file:
         if len(features) == 0:
             break # no packets left
 
-        print(i)
+        # print(i)
 
         # if i < 1000 and i != 1:
         #     continue
@@ -86,9 +87,24 @@ with open(PATH_OUT, 'w') as out_file:
             lru_controller[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
             lru_controller[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
 
-        print(srcIP+'_'+dstIP, 'len', len(lru_controller))
+        # flow counter using dict
+        ctr[srcIP] = 1
+        ctr[srcMAC+'_'+srcIP] = 1
+        ctr[srcIP+'_'+dstIP] = 1
+        ctr[dstIP+'_'+srcIP] = 1
+        ctr[srcIP+'_'+dstIP+'_jit'] = 1
+        if srcProtocol == 'arp':
+            ctr[srcMAC+'_'+dstMAC] = 1
+            ctr[dstMAC+'_'+srcMAC] = 1
+        else:
+            ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
+            ctr[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
+
+        # print(srcIP+'_'+dstIP, 'len', len(lru_controller))
 
         # select only features
         features = features[:115]
         # write to file
         out_file.write(','.join(map(str, features)) + '\n')
+
+print(f"flow count: {len(ctr)}")
