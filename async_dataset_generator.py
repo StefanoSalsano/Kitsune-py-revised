@@ -33,11 +33,12 @@ def compare_exact(first, second):
 
 # argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', help="input file path")
-parser.add_argument('-o', help="output file path")
-parser.add_argument('-n', help="number of elements saved in the LRU cache")
+parser.add_argument('-i', help="input file path", required=True)
+parser.add_argument('-o', help="output file path", required=True)
+parser.add_argument('-n', help="number of elements saved in the LRU cache", required=True)
 parser.add_argument('-t', default=0.1, type=float, help="LRU cache update interval")
 parser.add_argument('-d', default=0.03, type=float, help="LRU cache update delay")
+parser.add_argument('--no-delay', action="store_true", help="do not consider any delay")
 args = parser.parse_args()
 
 
@@ -77,14 +78,14 @@ with open(PATH_OUT, 'w') as out_file:
         pkt_len = int(pkt_len)
 
         # flow counter using dict
-        ctr[srcIP] = 1
-        ctr[srcMAC+'_'+srcIP] = 1
-        ctr[srcIP+'_'+dstIP] = 1
-        ctr[srcIP+'_'+dstIP+'_jit'] = 1
-        if srcProtocol == 'arp':
-            ctr[srcMAC+'_'+dstMAC] = 1
-        else:
-            ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
+        # ctr[srcIP] = 1
+        # ctr[srcMAC+'_'+srcIP] = 1
+        # ctr[srcIP+'_'+dstIP] = 1
+        # ctr[srcIP+'_'+dstIP+'_jit'] = 1
+        # if srcProtocol == 'arp':
+        #     ctr[srcMAC+'_'+dstMAC] = 1
+        # else:
+        #     ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
 
         # update lru_controller
         lru_controller[srcIP] = Hstat
@@ -97,36 +98,41 @@ with open(PATH_OUT, 'w') as out_file:
             lru_controller[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = HpHpstat
 
         # check timestamp
-        if i == 1:
-            switch_new = dict(lru_controller.items())
-            switch_cur = dict()
-            prev_timestamp = timestamp
-        
-        if timestamp - prev_timestamp > args.t:
-            # case in which more than t - d have passed since last packet
-            if not compare_exact(switch_cur, switch_new):
-            # if switch_cur != switch_new:
+        if args.no_delay:
+            switch_cur = dict(lru_controller.items())
+        else:
+            if i == 1:
+                switch_new = dict(lru_controller.items())
+                switch_cur = dict()
+                prev_timestamp = timestamp
+            
+            if timestamp - prev_timestamp > args.t:
+                # case in which more than t - d have passed since last packet
+                if not compare_exact(switch_cur, switch_new):
+                # if switch_cur != switch_new:
+                    # update switch_cur
+                    switch_cur = switch_new
+
+                # update switch_new
+                switch_new = dict(lru_controller.items())
+                prev_timestamp = timestamp
+                if args.d == 0:
+                    switch_cur = switch_new
+            elif timestamp - prev_timestamp > args.d:
                 # update switch_cur
                 switch_cur = switch_new
 
-            # update switch_new
-            switch_new = dict(lru_controller.items())
-            prev_timestamp = timestamp
-        elif timestamp - prev_timestamp > args.d:
-            # update switch_cur
-            switch_cur = switch_new
-
         # count new flows
-        if Hstat[0] == '1.0':
-            db_init_count +=1
-        if MIstat[0] == '1.0':
-            db_init_count +=1
-        if HHstat[0] == '1.0':
-            db_init_count +=1
-        if HHstat_jit[0] == '1.0':
-            db_init_count +=1
-        if HpHpstat[0] == '1.0':
-            db_init_count +=1
+        # if Hstat[0] == '1.0':
+        #     db_init_count +=1
+        # if MIstat[0] == '1.0':
+        #     db_init_count +=1
+        # if HHstat[0] == '1.0':
+        #     db_init_count +=1
+        # if HHstat_jit[0] == '1.0':
+        #     db_init_count +=1
+        # if HpHpstat[0] == '1.0':
+        #     db_init_count +=1
         
         # get features from switch_cur and write them to file
         # if features are not in switch_cur, initialise them to 1st packet
@@ -169,6 +175,6 @@ with open(PATH_OUT, 'w') as out_file:
         out_file.write(','.join(map(str, features)) + '\n')
 
 # final count
-print(f"flow count: {len(ctr)}")
-print(f"db init count: {db_init_count}")
+# print(f"flow count: {len(ctr)}")
+# print(f"db init count: {db_init_count}")
 print(f"lru init count: {lru_init_count}")
