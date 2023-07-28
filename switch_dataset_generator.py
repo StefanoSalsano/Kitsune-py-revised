@@ -77,11 +77,14 @@ with open(PATH_OUT, 'w') as out_file:
         lru_controller[srcIP] = 1
         lru_controller[srcMAC+'_'+srcIP] = 1
         lru_controller[srcIP+'_'+dstIP] = 1
+        lru_controller[dstIP+'_'+srcIP] = 1
         lru_controller['jitter'+srcIP+'_'+dstIP] = 1
         if srcProtocol == 'arp':
             lru_controller[srcMAC+'_'+dstMAC] = 1
+            lru_controller[dstMAC+'_'+srcMAC] = 1
         else:
             lru_controller[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
+            lru_controller[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
 
         print(srcIP+'_'+dstIP, 'len', len(lru_controller))
 
