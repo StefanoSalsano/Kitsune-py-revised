@@ -71,9 +71,6 @@ with open(PATH_OUT, 'w') as out_file:
         HpHpstat = features[80:115]
         timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol, pkt_len = features[115:]
 
-        timestamp = float(timestamp)
-        pkt_len = int(pkt_len)
-
         # update lru_controller
         lru_controller[srcIP] = 1
         lru_controller[srcMAC+'_'+srcIP] = 1
@@ -88,17 +85,17 @@ with open(PATH_OUT, 'w') as out_file:
             lru_controller[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
 
         # flow counter using dict
-        ctr[srcIP] = 1
-        ctr[srcMAC+'_'+srcIP] = 1
-        ctr[srcIP+'_'+dstIP] = 1
-        ctr[dstIP+'_'+srcIP] = 1
-        ctr[srcIP+'_'+dstIP+'_jit'] = 1
-        if srcProtocol == 'arp':
-            ctr[srcMAC+'_'+dstMAC] = 1
-            ctr[dstMAC+'_'+srcMAC] = 1
-        else:
-            ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
-            ctr[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
+        # ctr[srcIP] = 1
+        # ctr[srcMAC+'_'+srcIP] = 1
+        # ctr[srcIP+'_'+dstIP] = 1
+        # ctr[dstIP+'_'+srcIP] = 1
+        # ctr[srcIP+'_'+dstIP+'_jit'] = 1
+        # if srcProtocol == 'arp':
+        #     ctr[srcMAC+'_'+dstMAC] = 1
+        #     ctr[dstMAC+'_'+srcMAC] = 1
+        # else:
+        #     ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
+        #     ctr[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
 
         # print(srcIP+'_'+dstIP, 'len', len(lru_controller))
 
