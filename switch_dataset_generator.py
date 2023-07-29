@@ -2,10 +2,10 @@
 Run feature extraction on the entire trace and save the asynchronous dataset.
 
 At each packet, save the features belonging to each different flow in a LRUCache
-object, named "lru_controller", with the flow ID as the key.
+object, named "lru_switch", with the flow ID as the key.
 
 Maintain another dict named "switch" that gets updated at fixed
-time intervals, by copying the lru_controller object into it. The time interval
+time intervals, by copying the lru_switch object into it. The time interval
 is calculated using the timestamp of the packet being processed.
 
 When a packet is processed, give it the features of its related flows from the
@@ -41,7 +41,7 @@ LIMIT = np.Inf #the number of packets to process
 
 i = 0
 ctr = dict()
-lru_controller = LRU(args.n)
+lru_switch = LRU(args.n)
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
@@ -51,7 +51,7 @@ with open(PATH_OUT, 'w') as out_file:
         if i % 10000 == 0:
             print(i)
         # get next features vector
-        features = extractor.get_next_vector(lru=dict(lru_controller.items()))
+        features = extractor.get_next_vector(lru=lru_switch)
         if len(features) == 0:
             break # no packets left
 
@@ -64,25 +64,25 @@ with open(PATH_OUT, 'w') as out_file:
         #     break
 
         # unpack features
-        Hstat = features[:15]
-        MIstat = features[15:30]
-        HHstat = features[30:65]
-        HHstat_jit = features[65:80]
-        HpHpstat = features[80:115]
-        timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol, pkt_len = features[115:]
+        # Hstat = features[:15]
+        # MIstat = features[15:30]
+        # HHstat = features[30:65]
+        # HHstat_jit = features[65:80]
+        # HpHpstat = features[80:115]
+        # timestamp, srcIP, dstIP, srcMAC, dstMAC, srcProtocol, dstProtocol, pkt_len = features[115:]
 
-        # update lru_controller
-        lru_controller[srcIP] = 1
-        lru_controller[srcMAC+'_'+srcIP] = 1
-        lru_controller[srcIP+'_'+dstIP] = 1
-        lru_controller[dstIP+'_'+srcIP] = 1
-        lru_controller['jitter'+srcIP+'_'+dstIP] = 1
-        if srcProtocol == 'arp':
-            lru_controller[srcMAC+'_'+dstMAC] = 1
-            lru_controller[dstMAC+'_'+srcMAC] = 1
-        else:
-            lru_controller[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
-            lru_controller[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
+        # # update lru_switch
+        # lru_switch[srcIP] = 1
+        # lru_switch[srcMAC+'_'+srcIP] = 1
+        # lru_switch[srcIP+'_'+dstIP] = 1
+        # lru_switch[dstIP+'_'+srcIP] = 1
+        # lru_switch['jitter'+srcIP+'_'+dstIP] = 1
+        # if srcProtocol == 'arp':
+        #     lru_switch[srcMAC+'_'+dstMAC] = 1
+        #     lru_switch[dstMAC+'_'+srcMAC] = 1
+        # else:
+        #     lru_switch[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
+        #     lru_switch[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
 
         # flow counter using dict
         # ctr[srcIP] = 1
@@ -97,7 +97,7 @@ with open(PATH_OUT, 'w') as out_file:
         #     ctr[srcIP +'_'+ srcProtocol+'_'+dstIP +'_'+ dstProtocol] = 1
         #     ctr[dstIP +'_'+ dstProtocol+'_'+srcIP +'_'+ srcProtocol] = 1
 
-        # print(srcIP+'_'+dstIP, 'len', len(lru_controller))
+        # print(srcIP+'_'+dstIP, 'len', len(lru_switch))
 
         # select only features
         features = features[:115]
@@ -105,3 +105,4 @@ with open(PATH_OUT, 'w') as out_file:
         out_file.write(','.join(map(str, features)) + '\n')
 
 print(f"flow count: {len(ctr)}")
+print(f"len(lru_switch): {len(lru_switch)}")

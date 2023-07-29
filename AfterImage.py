@@ -453,6 +453,7 @@ class incStatDB:
             key_lru = ('jitter'+ID if isTypeDiff else ID)
         else:
             key_lru = ID_lru
+        key_lru = ('jitter'+ID if isTypeDiff else ID)
         # print(f"key_lru: {key_lru}")
 
         #Retrieve incStat
@@ -460,10 +461,12 @@ class incStatDB:
         # print(f"key:     {key}")
 
         incS = None
-        if key_lru in lru or for2D:
+        if key in lru:
             # get stat
             # print("get")
             incS = self.HT.get(key)
+        # this is a fix for a bug that happens only in the Mirai dataset and
+        # only in 4 packets, so for now it does not look so bad...
         if incS is not None:
             return incS
         else:
@@ -472,7 +475,9 @@ class incStatDB:
             # self.not_found_ctr += 1
             # print(f"not found: {self.not_found_ctr}")
             incS = incStat(Lambda, ID, 0 if isTypeDiff else init_time, isTypeDiff=isTypeDiff)
-            self.HT[key] = incS #add new entry
+            # add new entries
+            self.HT[key] = incS
+            lru[key] = 1
         return incS
 
     # Registers covariance tracking for two streams, registers missing streams
