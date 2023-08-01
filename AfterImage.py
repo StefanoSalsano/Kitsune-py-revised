@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import state
+# import state
 import sys
 
 
@@ -356,10 +356,10 @@ class incStat_cov:
         #     key = myid1+'_'+str(self.incStats[1-lower].Lambda)
         # else :
         #     key = myid2+'_'+str(self.incStats[1-lower].Lambda)
-        if myid1 in state.map2D :
-            key = myid1
-        else :
-            key = myid2
+        # if myid1 in state.map2D :
+        #     key = myid1
+        # else :
+        #     key = myid2
         # if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
         #     print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
         # if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
@@ -574,8 +574,8 @@ class incStatDB:
         #     print ('after image here')
         #     sys.exit()
 
-        if stateUpdate :
-            state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
+        # if stateUpdate :
+        #     state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
         if for2D:
             return incS.allstats_1D(for2D=True)
@@ -604,8 +604,8 @@ class incStatDB:
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         # if ((ID1+'_'+ID2)=='00:14:1c:28:d6:06_01:80:c2:00:00:00' and Lambda == 5) :
         #     print ('second after image here')
-        meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
-        state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
+        # meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
+        # state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
         # return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False,for2D=True) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         
