@@ -57,7 +57,7 @@ for dataset, pcap_num in DATASETS.items():
     with open(path_tmp, 'w') as file_tmp:
         while True:
             i += 1
-            if i % 10000 == 0:
+            if i % 100000 == 0:
                 print(i)
             # get next features vector
             features = extractor.get_next_vector()
@@ -118,7 +118,7 @@ for dataset, pcap_num in DATASETS.items():
                             switch_cur = switch_new
                         # update switch_new
                         switch_new = dict(lru_controller.items())
-                        prev_timestamp = timestamp
+                    prev_timestamp = timestamp
                 elif timestamp - prev_timestamp > args.d:
                     # update switch_cur
                     switch_cur = switch_new
@@ -199,6 +199,7 @@ labels = ""
 
 # print(df)
 
+# TODO there is a bug here somewhere
 print("select test rows")
 # read test index list
 with open("test_index_list.csv", "r") as in_file:
