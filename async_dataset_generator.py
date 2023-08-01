@@ -54,13 +54,14 @@ lru_controller = LRU(int(args.n))
 ctr = dict()
 db_init_count = 0
 lru_init_count = 0
+cur_uptodate = False
 
 # init feature extractor
 extractor = FE(PATH_IN, LIMIT)
 with open(PATH_OUT, 'w') as out_file:
     while True:
         i += 1
-        if i % 10000 == 0:
+        if i % 100000 == 0:
             print(i)
         # get next features vector
         features = extractor.get_next_vector()
@@ -102,25 +103,34 @@ with open(PATH_OUT, 'w') as out_file:
             switch_cur = dict(lru_controller.items())
         else:
             if i == 1:
-                switch_new = dict(lru_controller.items())
-                switch_cur = dict()
+                if args.d == 0:
+                    switch_new = ""
+                    switch_cur = dict(lru_controller.items())
+                    cur_uptodate = True
+                else:
+                    switch_new = dict(lru_controller.items())
+                    switch_cur = dict()
+                    cur_uptodate = False
                 prev_timestamp = timestamp
             
             if timestamp - prev_timestamp > args.t:
-                # case in which more than t - d have passed since last packet
-                if not compare_exact(switch_cur, switch_new):
-                # if switch_cur != switch_new:
+                # delay is 0, avoid 1 copy
+                if args.d == 0:
+                    switch_cur = dict(lru_controller.items())
+                else:
+                    # case in which more than t - d have passed since last packet
+                    if not cur_uptodate:
+                        # update switch_cur
+                        switch_cur = switch_new
+                    # update switch_new
+                    switch_new = dict(lru_controller.items())
+                    cur_uptodate = False
+                prev_timestamp = timestamp
+            elif timestamp - prev_timestamp > args.d:
+                if not cur_uptodate:
                     # update switch_cur
                     switch_cur = switch_new
-
-                # update switch_new
-                switch_new = dict(lru_controller.items())
-                prev_timestamp = timestamp
-                if args.d == 0:
-                    switch_cur = switch_new
-            elif timestamp - prev_timestamp > args.d:
-                # update switch_cur
-                switch_cur = switch_new
+                    cur_uptodate = True
 
         # count new flows
         # if Hstat[0] == '1.0':
