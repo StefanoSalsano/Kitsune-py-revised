@@ -236,6 +236,9 @@ class FE:
         """
         evaluates some statistics on the flows 
 
+        CAVEAT : IT USES A TRICK BASED ON THE PRESENCE OF '_'
+        TO CLASSIFY ORIGIN ONLY OR ORIGIN DESTINATION
+        TODO IT DOES NOT WORK FOR MAC IP
         evaluates the number of flows and the histogram 
         of the number of packets for each flow
         """
@@ -334,6 +337,10 @@ class FE:
     def evaluate_stats(self) :
         histo_source, list_source, histo_sourcedest, list_sourcedest = self.evaluate_stats_dict(self.nstat.HT_H.HT)
         histo_null, list_null, histo_conv, list_conv = self.evaluate_stats_dict(self.nstat.HT_Hp.HT)
+        #TODO FIX STATS FOR MAC IP
+        #histo_mi, list_mi, histo_sdmi, list_sdmi = self.evaluate_stats_dict(self.nstat.HT_MI.HT)
+        self.evaluate_stats_dict(self.nstat.HT_jit.HT)
+
 
         my_stats = dict()
         my_stats ['source'] = {'histo' : histo_source, 'list' : list_source}
