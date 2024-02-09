@@ -25,14 +25,14 @@ import sys
 
 # File location
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
-#path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
-path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
-path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
+path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
+#path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
+#path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
 
 
 
 packet_limit = np.Inf #the number of packets to process
-# packet_limit = 10000 #the number of packets to process
+packet_limit = 100 #the number of packets to process
 
 
 # KitNET params:
@@ -63,12 +63,16 @@ while True:
     RMSEs.append(rmse)
 stop = time.time()
 
-K.FE.evaluate_stats()
-K.FE.export_flow_time_values()
+#analysis of flow statistics
+#K.FE.evaluate_stats()
+
+#useful for debug
+#saves into json_data.json time values series for all flows (H and Hp)
+#K.FE.export_flow_time_values() 
 
 print("Complete ok. Time elapsed: "+ str(stop - start))
 
-sys.exit()
+#sys.exit()
 
 import pandas as pd
 df = pd.DataFrame(collector)
@@ -80,7 +84,7 @@ for i in range(0,201) :
     row_converter[i]=i+1
 df.rename (columns=converter,index=row_converter,inplace=True)
 #print (df)
-#df.to_csv('output.csv')
+df.to_csv('output.csv')
 
 sys.exit()
 

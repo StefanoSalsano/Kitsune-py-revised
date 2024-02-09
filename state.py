@@ -84,9 +84,9 @@ def update2D(ID1, ID2, x_cur, t_cur, meanID1ID2, Lambda=_lambda, counter=0):
     #update(ID2, 0, t_cur, Lambda)
     lower=order(ID1,ID2)
     if lower==0 :
-        update_cov(ID1+ID2, lower, meanID1ID2, x_cur, t_cur, Lambda, counter)
+        update_cov(ID1+'_'+ID2, lower, meanID1ID2, x_cur, t_cur, Lambda, counter)
     else :
-        update_cov(ID2+ID1, lower, meanID1ID2, x_cur, t_cur, Lambda, counter)
+        update_cov(ID2+'_'+ID1, lower, meanID1ID2, x_cur, t_cur, Lambda, counter)
 
 def update_cov(key, lower, meanID1ID2, x_cur, t_cur, Lambda=_lambda,counter=0):
     state2D = dict()
