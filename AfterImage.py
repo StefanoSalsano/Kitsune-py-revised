@@ -130,10 +130,13 @@ class incStat:
         return math.sqrt(A)
 
     #calculates and pulls all stats on this stream
-    def allstats_1D(self):
+    def allstats_1D(self, for2D=False):
         self.cur_mean = self.CF1 / self.w
-        self.cur_var = abs(self.CF2 / self.w - math.pow(self.cur_mean, 2))
-        return [self.w, self.cur_mean, self.cur_var]
+        if for2D:
+            return [self.w, self.cur_mean, self.std()]
+        else:
+            self.cur_var = abs(self.CF2 / self.w - math.pow(self.cur_mean, 2))
+            return [self.w, self.cur_mean, self.cur_var]
 
     #calculates and pulls all stats on this stream, and stats shared with the indicated stream
     def allstats_2D(self, ID2):
@@ -404,7 +407,8 @@ class incStat_cov:
 
     # calculates and pulls all correlative stats AND 2D stats from both streams (incStat)
     def get_stats2(self):
-        return [self.incStats[0].radius([self.incStats[1]]),self.incStats[0].magnitude([self.incStats[1]]),self.cov(), self.pcc()]
+        # return [self.incStats[0].radius([self.incStats[1]]),self.incStats[0].magnitude([self.incStats[1]]),self.cov(), self.pcc()]
+        return [self.incStats[0].magnitude([self.incStats[1]]), self.incStats[0].radius([self.incStats[1]]),self.cov(), self.pcc()]
 
     # calculates and pulls all correlative stats AND 2D stats AND the regular stats from both streams (incStat)
     def get_stats3(self):
@@ -572,7 +576,7 @@ class incStatDB:
         return [np.sqrt(rad),np.sqrt(mag)]
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
-    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
+    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True,for2D=False):  # weight, mean, std
         # if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
         #     print ('after image here')
         #     sys.exit()
@@ -584,7 +588,10 @@ class incStatDB:
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
         
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
-        return incS.allstats_1D()
+        if for2D:
+            return incS.allstats_1D(for2D=True)
+        else:
+            return incS.allstats_1D()
 
 
     # Updates and then pulls current correlative stats between the given IDs. Automatically registers previously unknown stream IDs, and cov tracking
@@ -611,9 +618,9 @@ class incStatDB:
         #     print ('second after image here')
         meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
-        if (ID1==ID2) and Lambda==0.01:
-            print ("ID1==ID2")
-        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+
+        # return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False,for2D=True) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?
