@@ -368,10 +368,10 @@ class incStat_cov:
             key = myid1
         else :
             key = myid2
-        if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
-           print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
-        if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
-           print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
+        # if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
+        #    print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
+        # if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
+        #    print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
         # if (key == '192.168.2.101192.168.2.110_0.01') :
         #     print ('AAAAAAkey',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
 

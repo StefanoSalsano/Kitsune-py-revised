@@ -71,11 +71,11 @@ class netStat:
         return src_subnet, dst_subnet
 
     def updateGetStats(self, IPtype, srcMAC, dstMAC, srcIP, srcProtocol, dstIP, dstProtocol, datagramSize, timestamp, counter):
-        # srcMAC='sm'+srcMAC
-        # dstMAC='dm'+dstMAC
-        # srcIP='si'+srcIP
-        # dstIP='di'+dstIP
-        print(counter)
+        srcMAC='sm'+srcMAC
+        dstMAC='dm'+dstMAC
+        srcIP='si'+srcIP
+        dstIP='di'+dstIP
+        # print(counter)
         # if (counter==46):
         #     print(srcIP,srcMAC,dstIP,dstMAC)
 

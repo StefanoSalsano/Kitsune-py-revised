@@ -25,14 +25,14 @@ import sys
 
 # File location
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
-path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
+#path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
 #path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
-#path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
+path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
 
 
 
 packet_limit = np.Inf #the number of packets to process
-packet_limit = 100 #the number of packets to process
+packet_limit = 100000 #the number of packets to process
 
 
 # KitNET params:
@@ -76,13 +76,23 @@ print("Complete ok. Time elapsed: "+ str(stop - start))
 
 import pandas as pd
 df = pd.DataFrame(collector)
+
 converter=dict()
 row_converter=dict()
 for i in range(0,115) :
     converter[i]=i+1
-for i in range(0,201) :
+for i in range(0,len(df)) :
     row_converter[i]=i+1
 df.rename (columns=converter,index=row_converter,inplace=True)
+
+# miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=100)
+miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=100000)
+for i in range(0,7):
+  for j in range(1,116):
+    if df.at[i+1,j]-miraidf.at[i,j] != 0 :
+        print(i,j,df.at[i+1,j]-miraidf.at[i,j],df.at[i+1,j],miraidf.at[i,j])
+
+
 #print (df)
 df.to_csv('output.csv')
 
