@@ -616,6 +616,9 @@ class incStatDB:
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         # if ((ID1+'_'+ID2)=='00:14:1c:28:d6:06_01:80:c2:00:00:00' and Lambda == 5) :
         #     print ('second after image here')
+        if (Lambda == 5 and (ID1+'_'+ID2) == 'si192.168.2.110_di192.168.2.101') :
+            print ((ID1+'_'+ID2))
+
         meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
 
