@@ -148,6 +148,9 @@ class FE:
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = row[2]  # src MAC
                     dstIP = row[3]  # dst MAC
+                    # to solve Configuration Test Protocol bug
+                    if srcIP == dstIP:
+                        dstIP = dstIP+"ctp"                    
             # if self.curPacketIndx == 45 :
             #     print ('srcproto', srcproto, srcIP, dstIP)
             if srcproto == '' :
@@ -198,6 +201,9 @@ class FE:
                 elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                     srcIP = packet.src  # src MAC
                     dstIP = packet.dst  # dst MAC
+                    # to solve Configuration Test Protocol bug
+                    if packet.src == packet.dst:
+                        dstIP = packet.dst+"ctp"  # dst MAC
             if srcproto == '' :
                 srcproto = 'null'
             if dstproto == '' :
