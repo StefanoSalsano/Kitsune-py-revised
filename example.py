@@ -89,8 +89,11 @@ miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=100)
 #miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=100000)
 for i in range(0,99):
   for j in range(1,116):
-    if abs(df.at[i+1,j]-miraidf.at[i,j]) > 1e-7 :
-        print(i+1,j,df.at[i+1,j]-miraidf.at[i,j],df.at[i+1,j],miraidf.at[i,j])
+    error = abs(df.at[i+1,j]-miraidf.at[i,j])
+    if error > 1e-7 :
+        if (error / miraidf.at[i,j]) > 1e-7 :
+            if abs (miraidf.at[i,j]/df.at[i+1,j]-2) > 1e-3 :
+                print(i+1,j,df.at[i+1,j]-miraidf.at[i,j],df.at[i+1,j],miraidf.at[i,j])
 
 
 #print (df)

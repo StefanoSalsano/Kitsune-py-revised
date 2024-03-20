@@ -44,13 +44,14 @@ class incStat:
         self.CF1 += v
         self.CF2 += math.pow(v, 2)
         self.w += 1
-        if (self.Lambda==0.01) :
-            if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-                print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
-            if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-                print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
-            if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-                print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
+        #CHECK comparison of features calculated in the old and new way
+        #if (self.Lambda==0.01) :
+        #    if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #        print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
+        #    if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #        print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
+        #    if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #        print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
@@ -616,8 +617,8 @@ class incStatDB:
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         # if ((ID1+'_'+ID2)=='00:14:1c:28:d6:06_01:80:c2:00:00:00' and Lambda == 5) :
         #     print ('second after image here')
-        if (Lambda == 5 and (ID1+'_'+ID2) == 'si192.168.2.110_di192.168.2.101') :
-            print ((ID1+'_'+ID2))
+        #if (Lambda == 5 and (ID1+'_'+ID2) == 'si192.168.2.110_di192.168.2.101') :
+        #    print ((ID1+'_'+ID2))
 
         meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
