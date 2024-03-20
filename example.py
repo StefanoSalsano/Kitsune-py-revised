@@ -26,14 +26,14 @@ import sys
 # File location
 #path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
 #path = "mirai2000.pcap" #the pcap, pcapng, or tsv file to process.
-#path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
+path = "Mirai_pcap.pcap" #the pcap, pcapng, or tsv file to process.
 path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
 
 
 
 packet_limit = np.Inf #the number of packets to process
-packet_limit = 100000 #the number of packets to process
-packet_limit = 1000
+packet_limit = 100 #the number of packets to process
+
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
@@ -63,12 +63,10 @@ while True:
     RMSEs.append(rmse)
 stop = time.time()
 
-#analysis of flow statistics
-#K.FE.evaluate_stats()
+evaluated_packets = i
 
-#useful for debug
-#saves into json_data.json time values series for all flows (H and Hp)
-#K.FE.export_flow_time_values() 
+K.FE.evaluate_stats()
+K.FE.export_flow_time_values()
 
 print("Complete ok. Time elapsed: "+ str(stop - start))
 
@@ -76,29 +74,16 @@ print("Complete ok. Time elapsed: "+ str(stop - start))
 
 import pandas as pd
 df = pd.DataFrame(collector)
-
+print(df)
 converter=dict()
 row_converter=dict()
 for i in range(0,115) :
     converter[i]=i+1
-for i in range(0,len(df)) :
+for i in range(0,evaluated_packets) :
     row_converter[i]=i+1
 df.rename (columns=converter,index=row_converter,inplace=True)
-rows_to_read=1000
-miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=rows_to_read)
-#miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=100000)
-for i in range(0,rows_to_read-1):
-  for j in range(1,116):
-    error = abs(df.at[i+1,j]-miraidf.at[i,j])
-    if error > 1e-7 :
-        if (error / miraidf.at[i,j]) > 1e-7 :
-            if abs (miraidf.at[i,j]/df.at[i+1,j]-2) > 1e-3 :
-                indice=(j-36) % 7
-                if not ((indice==0 or indice==1) and j>35 and j < 66) :
-                    print(i+1,j,df.at[i+1,j]-miraidf.at[i,j],df.at[i+1,j],miraidf.at[i,j])
 
-
-#print (df)
+print (df)
 df.to_csv('output.csv')
 
 sys.exit()
