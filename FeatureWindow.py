@@ -1,6 +1,7 @@
 import datetime
 import random
 import math
+import numpy as np
 
 class TimestampedClass:
     def __init__(self, timestamp, value):
@@ -8,6 +9,7 @@ class TimestampedClass:
         self.value = value
         self.avg_bw_last_t_window = None
         self.avg_len_last_t_window = None
+        self.count_last_t = None
         self.ewma = None  #average packet size
         self.ewma_rate = None
 
@@ -41,6 +43,12 @@ class TimestampedClass:
     def get_ewma_rate(self):
         return self.ewma_rate
 
+    def set_count_last_t(self, count_last_t):
+        self.count_last_t = count_last_t
+
+    def get_count_last_t(self):
+        return self.count_last_t
+
 
 
 class TimestampedList:
@@ -53,10 +61,15 @@ class TimestampedList:
         return self.timestamped_list[index]
 
     def process_next(self,i,tau) :
+        """
+        evaluate the exact window based features for a single packet
+        """
         obj = self.timestamped_list[i]
         value = obj.get_value()
         timestamp = obj.get_timestamp()
         self.bytes_in_window += value
+        # delta = timestamp - self.timestamped_list[0].get_timestamp()
+        # boolean = delta > 4131 and delta < 4133
         if  value > 0 :
             self.pkt_in_window += 1
             decrease = TimestampedClass (timestamp+tau,-value)
@@ -64,11 +77,13 @@ class TimestampedList:
         else :
             self.pkt_in_window -= 1
         obj.set_avg_bw_last_t_window((float(self.bytes_in_window))/tau)
+        obj.set_count_last_t(self.pkt_in_window)
         if self.pkt_in_window > 0 :
             obj.set_avg_len_last_t_window((float(self.bytes_in_window))/self.pkt_in_window)
         else :
             obj.set_avg_len_last_t_window = 0
-
+        # if boolean : print (tau, delta, value, self.pkt_in_window )
+        
     def process_all (self, window) :
         i = 0
         while (i < len(self.timestamped_list)) :
@@ -100,33 +115,44 @@ class TimestampedList:
         for obj in self.timestamped_list:
             print(f"Tstamp: {obj.get_timestamp()}, Val: {obj.get_value()}, Avg T Win: {obj.get_avg_bw_last_t_window()}, EWMA: {obj.get_ewma()}")
 
-    def get_time_values(self, times = [], values=[]):
+    def get_time_values(self, times=[], count=[], avg_len=[], bw=[]):
+        """
+        extract the timestamps and the values of avg bw, count, avg len
+        """
         for obj in self.timestamped_list:
+            
+            # timestamp = obj.get_timestamp()
+            # delta = timestamp - self.timestamped_list[0].get_timestamp()
+            # boolean = delta > 4131 and delta < 4133
+            # if boolean : print ( delta, obj.get_count_last_t() )
+
             times.append (obj.get_timestamp())
-            values.append (obj.get_avg_bw_last_t_window())
+            bw.append (obj.get_avg_bw_last_t_window())
+            avg_len.append (obj.get_avg_len_last_t_window())
+            count.append (obj.get_count_last_t())
 
-    def evaluate_average_previous_T(self, T):
-        for i in range(len(self.timestamped_list)):
-            current_time = self.timestamped_list[i].get_timestamp()
-            start_time = current_time - datetime.timedelta(microseconds=T)
+    # def evaluate_average_previous_T(self, T):
+    #     for i in range(len(self.timestamped_list)):
+    #         current_time = self.timestamped_list[i].get_timestamp()
+    #         start_time = current_time - datetime.timedelta(microseconds=T)
 
-            total_value = 0
-            count = 0
+    #         total_value = 0
+    #         count = 0
 
-            for j in range(i, -1, -1):
-                obj = self.timestamped_list[j]
+    #         for j in range(i, -1, -1):
+    #             obj = self.timestamped_list[j]
 
-                if obj.get_timestamp() >= start_time:
-                    total_value += obj.get_value()
-                    count += 1
-                else:
-                    break
+    #             if obj.get_timestamp() >= start_time:
+    #                 total_value += obj.get_value()
+    #                 count += 1
+    #             else:
+    #                 break
 
-            if count > 0:
-                average = total_value / count
-                self.timestamped_list[i].set_avg_last_t_window(average)
-            else:
-                self.timestamped_list[i].set_avg_last_t_window(0)  # Set average to 0 if no elements within the specified time range
+    #         if count > 0:
+    #             average = total_value / count
+    #             self.timestamped_list[i].set_avg_last_t_window(average)
+    #         else:
+    #             self.timestamped_list[i].set_avg_last_t_window(0)  # Set average to 0 if no elements within the specified time range
 
     def evaluate_ewma(self, tau, times = [], ewma_values=[], ewma_rate_values=[] ):
         if not self.timestamped_list:
@@ -157,14 +183,39 @@ class TimestampedList:
             ewma_values.append (ewma)
             ewma_rate_values.append (ewma_rate)
     
-    def sample_and_hold(self,times = [], values=[] ) :
+    def sample_and_hold(self,times = [], count=[], avg_len=[], bw=[] ) :
         i = 0 
         while (i < len(times)-1) :
-            times.insert(i+1,times[i+1])
-            values.insert(i+1,values[i])
+            next_time = times[i+1]
+            times.insert(i+1,next_time)
+            count.insert(i+1,count[i])
+            avg_len.insert(i+1,avg_len[i])
+            bw.insert(i+1,bw[i])
             i += 2
 
-
+    def time_slice(self, times = [], values = [], start_time=0.0, end_time=np.inf,
+                   duration = np.inf, samples = np.inf) :
+        out_times = []
+        out_values = []
+        if duration < np.inf :
+            end_time = min(end_time,start_time+duration)
+            print (end_time)
+        counter = 0
+        for i in range(len(times)) :
+            timestamp = times [i]
+            # print (timestamp)
+            if timestamp > end_time : 
+                # print ('end_time')
+                break
+            if timestamp >= start_time :
+                out_times.append(timestamp)
+                out_values.append(values[i])
+                counter +=1 
+            if counter >= samples : 
+                # print ('samples')
+                break
+        # print (out_times, out_values)
+        return out_times, out_values
 
 
 # Example usage

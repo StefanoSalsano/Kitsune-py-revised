@@ -3,6 +3,11 @@ import numpy as np
 import state
 import sys
 
+# the flow level features are calculated using the previous
+# data structure and procedures with a number of corrections
+# and using new data structures and procedures defined in state.py
+# with the corrections there is a small discrepancy with respect to the
+# mirai.csv 2D stats (covariance and correlation)
 
 class incStat:
     def __init__(self, Lambda, ID, init_time=0, isTypeDiff=False):  # timestamp is creation time
@@ -39,12 +44,14 @@ class incStat:
         self.CF1 += v
         self.CF2 += math.pow(v, 2)
         self.w += 1
-        # if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-        #     print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
-        # if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-        #     print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
-        # if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
-        #     print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
+        #CHECK comparison of features calculated in the old and new way
+        #if (self.Lambda==0.01) :
+        #    if abs(self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #        print ('ID',self.ID,'Lambda',self.Lambda,'compare w not ok',self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0] )
+        #    if abs(self.CF1/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #        print('compare mean not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][1]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0])
+        #    if abs(self.CF2/self.w - state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][0]) > 0.0000001 :
+        #        print('compare sum of squares not ok',self.ID,self.CF1/self.w, state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2]/state.map1D[self.ID+'_'+str(self.Lambda)]['all'][2])
         self.cur_mean = np.nan  # force recalculation if called
         self.cur_var = np.nan
         self.cur_std = np.nan
@@ -57,8 +64,8 @@ class incStat:
 
         # update covs (if any)
         for cov in self.covs:
-            #pass #CORRECT
-            cov.update_cov(self.ID, v, t, dadove='for') #WRONG
+            pass #CORRECT
+            #cov.update_cov(self.ID, v, t, dadove='for') #WRONG
             #TODO-delete state.update2D(cov.state2D,v,t,self.Lambda)
 
     def processDecay(self, timestamp):
@@ -124,10 +131,13 @@ class incStat:
         return math.sqrt(A)
 
     #calculates and pulls all stats on this stream
-    def allstats_1D(self):
+    def allstats_1D(self, for2D=False):
         self.cur_mean = self.CF1 / self.w
-        self.cur_var = abs(self.CF2 / self.w - math.pow(self.cur_mean, 2))
-        return [self.w, self.cur_mean, self.cur_var]
+        if for2D:
+            return [self.w, self.cur_mean, self.std()]
+        else:
+            self.cur_var = abs(self.CF2 / self.w - math.pow(self.cur_mean, 2))
+            return [self.w, self.cur_mean, self.cur_var]
 
     #calculates and pulls all stats on this stream, and stats shared with the indicated stream
     def allstats_2D(self, ID2):
@@ -333,6 +343,8 @@ class incStat_cov:
         self.w3 += 1
         self.lastRes[inc] = res
 
+        # print("w3",dadove, self.w3)
+
         #DEBUG
         # if abs(self.CF3) > 0 and self.incStats[inc].Lambda == 0.01:
         #     print ('other_decay', other_decay, 'this_decay', this_decay)
@@ -358,9 +370,9 @@ class incStat_cov:
         else :
             key = myid2
         # if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
-        #     print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
+        #    print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
         # if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
-        #     print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
+        #    print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
         # if (key == '192.168.2.101192.168.2.110_0.01') :
         #     print ('AAAAAAkey',key,'Lambda',self.incStats[inc].Lambda,'compare CF3 wrong',self.CF3, state.map2D[key]['all'][1] )
 
@@ -396,7 +408,8 @@ class incStat_cov:
 
     # calculates and pulls all correlative stats AND 2D stats from both streams (incStat)
     def get_stats2(self):
-        return [self.incStats[0].radius([self.incStats[1]]),self.incStats[0].magnitude([self.incStats[1]]),self.cov(), self.pcc()]
+        # return [self.incStats[0].radius([self.incStats[1]]),self.incStats[0].magnitude([self.incStats[1]]),self.cov(), self.pcc()]
+        return [self.incStats[0].magnitude([self.incStats[1]]), self.incStats[0].radius([self.incStats[1]]),self.cov(), self.pcc()]
 
     # calculates and pulls all correlative stats AND 2D stats AND the regular stats from both streams (incStat)
     def get_stats3(self):
@@ -449,8 +462,9 @@ class incStatDB:
         key = ('jitter'+ID if isTypeDiff else ID)+"_"+str(Lambda)
         incS = self.HT.get(key)
         if incS is None: #does not already exist
-            # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-            #     print ('inside register, creating')
+            # if (ID=="sm00:14:1c:28:d6:06_si00:14:1c:28:d6:06" and Lambda==0.01) :
+            #     print (id(self.HT),'registering', key)
+
             if len(self.HT) + 1 > self.limit:
                 raise LookupError(
                     'Adding Entry:\n' + key + '\nwould exceed incStatHT 1D limit of ' + str(
@@ -476,7 +490,7 @@ class incStatDB:
             # if ID1 == '192.168.2.1' and ID2 == '192.168.2.108' and Lambda == 5:
             #     print ('IDs:',cov.incStats[0].ID,cov.incStats[1].ID)
             if (cov.incStats[0].ID == ID2+'_'+ID1 and cov.incStats[1].ID ==ID1+'_'+ID2) or (cov.incStats[1].ID == ID2+'_'+ID1 and cov.incStats[0].ID ==ID1+'_'+ID2) :
-                # print('existing cov!')
+                #print('existing cov!')
                 return cov #there is a pre-exiting link
 
         # Link incStats
@@ -489,6 +503,7 @@ class incStatDB:
     def update(self,ID,t,v,Lambda=1,isTypeDiff=False):
         # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
         #     print ('inside update')
+
         incS = self.register(ID,Lambda,t,isTypeDiff)
         incS.insert(v,t)
         if Lambda == 1 :
@@ -562,17 +577,22 @@ class incStatDB:
         return [np.sqrt(rad),np.sqrt(mag)]
 
     # Updates and then pulls current 1D stats from the given ID. Automatically registers previously unknown stream IDs
-    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True):  # weight, mean, std
-        # if (ID=='00:14:1c:28:d6:0601:80:c2:00:00:00' and Lambda == 5) :
-        #     print ('after image here')
+    def update_get_1D_Stats(self, ID,t,v,Lambda=1,isTypeDiff=False,stateUpdate=True,for2D=False):  # weight, mean, std
         # if (ID=='c:33:00:98:3ee:fd_ff:ff:ff:ff:ff:ff' and Lambda == 1) :
         #     print ('after image here')
         #     sys.exit()
 
+        # if (ID=="sm00:14:1c:28:d6:06_si00:14:1c:28:d6:06" and Lambda==0.01) :
+        #     print ("here",Lambda, t)
+
         if stateUpdate :
             state.update('jitter'+ID if isTypeDiff else ID,v,t,Lambda=Lambda,isTypeDiff=isTypeDiff)
+        
         incS = self.update(ID,t,v,Lambda,isTypeDiff=isTypeDiff)
-        return incS.allstats_1D()
+        if for2D:
+            return incS.allstats_1D(for2D=True)
+        else:
+            return incS.allstats_1D()
 
 
     # Updates and then pulls current correlative stats between the given IDs. Automatically registers previously unknown stream IDs, and cov tracking
@@ -585,6 +605,7 @@ class incStatDB:
         inc_cov = self.register_cov(ID1, ID2, Lambda,  t1)
         
         # Update cov tracker
+        # print ("update cov ", ID1+'_'+ID2)
         inc_cov.update_cov(ID1+'_'+ID2,v1,t1, dadove='get2D')
         if level == 1:
             return inc_cov.get_stats1()
@@ -596,9 +617,14 @@ class incStatDB:
         #return self.update_get_1D_Stats(ID1,t1,v1,Lambda) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
         # if ((ID1+'_'+ID2)=='00:14:1c:28:d6:06_01:80:c2:00:00:00' and Lambda == 5) :
         #     print ('second after image here')
+        #if (Lambda == 5 and (ID1+'_'+ID2) == 'si192.168.2.110_di192.168.2.101') :
+        #    print ((ID1+'_'+ID2))
+
         meanID1_ID2 = state.update(ID1+'_'+ID2,v1,t1,Lambda,return_mean=True)
         state.update2D(ID1, ID2, v1, t1, meanID1_ID2, Lambda,counter)
-        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+
+        # return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
+        return self.update_get_1D_Stats(ID1+'_'+ID2,t1,v1,Lambda,stateUpdate=False,for2D=True) + self.update_get_2D_Stats(ID1,ID2,t1,v1,Lambda,level=2)
     
     def getHeaders_1D(self,Lambda=1,ID=None):
         # Default Lambda?

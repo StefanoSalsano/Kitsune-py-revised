@@ -70,7 +70,20 @@ class netStat:
 
         return src_subnet, dst_subnet
 
-    def updateGetStats(self, IPtype, srcMAC,dstMAC, srcIP, srcProtocol, dstIP, dstProtocol, datagramSize, timestamp, counter):
+    def updateGetStats(self, IPtype, srcMAC, dstMAC, srcIP, srcProtocol, dstIP, dstProtocol, datagramSize, timestamp, counter):
+
+#        the following prefixing was added to solve a problem
+#        with a flow that has the same source and destination MAC
+#        but it creates a problem with the flows in the reverse direction
+#        srcMAC='sm'+srcMAC
+#        dstMAC='dm'+dstMAC
+#        srcIP='si'+srcIP
+#        dstIP='di'+dstIP
+        
+        # print(counter)
+        # if (counter==46):
+        #     print(srcIP,srcMAC,dstIP,dstMAC)
+
         # Host BW: Stats on the srcIP's general Sender Statistics
         Hstat = np.zeros((3*len(self.Lambdas,)))
         for i in range(len(self.Lambdas)):
