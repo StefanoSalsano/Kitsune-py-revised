@@ -85,6 +85,9 @@ class TimestampedList:
         # if boolean : print (tau, delta, value, self.pkt_in_window )
         
     def process_all (self, window) :
+        """
+            evaluate the exact window based features for all packets
+        """
         i = 0
         while (i < len(self.timestamped_list)) :
             self.process_next(i, window) 
@@ -184,6 +187,11 @@ class TimestampedList:
             ewma_rate_values.append (ewma_rate)
     
     def sample_and_hold(self,times = [], count=[], avg_len=[], bw=[] ) :
+        """
+        if count (t)= A and count(t+1) = B, then add a new point count(t+1) = A
+        for each point in the list, so that the plot is a step function
+        which keeps the value of the previous point until the next point
+        """
         i = 0 
         while (i < len(times)-1) :
             next_time = times[i+1]

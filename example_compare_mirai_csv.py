@@ -33,7 +33,7 @@ path = "Mirai_pcap.pcap.tsv" #the pcap, pcapng, or tsv file to process.
 
 packet_limit = np.Inf #the number of packets to process
 packet_limit = 100000 #the number of packets to process
-packet_limit = 1000
+packet_limit = 100
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
@@ -84,17 +84,18 @@ for i in range(0,115) :
 for i in range(0,len(df)) :
     row_converter[i]=i+1
 df.rename (columns=converter,index=row_converter,inplace=True)
-rows_to_read=1000
+rows_to_read=packet_limit
+rows_to_read=100
 miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=rows_to_read)
 #miraidf = pd.read_csv('Mirai_dataset.csv', header=None, index_col=0, nrows=100000)
 for i in range(0,rows_to_read-1):
   for j in range(1,116):
     error = abs(df.at[i+1,j]-miraidf.at[i,j])
     if error > 1e-7 :
-        if (error / miraidf.at[i,j]) > 1e-7 :
-            if abs (miraidf.at[i,j]/df.at[i+1,j]-2) > 1e-3 :
-                indice=(j-36) % 7
-                if not ((indice==0 or indice==1) and j>35 and j < 66) :
+        if abs(error / miraidf.at[i,j]) > 1e-7 :
+            #if abs (miraidf.at[i,j]/df.at[i+1,j]-2) > 1e-3 :
+                #indice=(j-36) % 7
+                #if not ((indice==0 or indice==1) and j>35 and j < 66) :
                     print(i+1,j,df.at[i+1,j]-miraidf.at[i,j],df.at[i+1,j],miraidf.at[i,j])
 
 

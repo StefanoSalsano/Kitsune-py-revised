@@ -12,8 +12,9 @@ TAU_1 = 1.0
 TAU_01 = 0.1
 
 #path = "json_data_ok_all.json" #the .json file to process
-timevalues_path = "json_data.json" #the .json file to process
-stats_path = "json_stats.json"
+timevalues_path = "json_data_ok_all.json"
+#timevalues_path = "json_data.json" #the .json file to process
+stats_path = "json_stats_ok_all.json"
 
 timevalues_dict = dict()
 with open(timevalues_path, "r") as read_content:
@@ -26,10 +27,10 @@ with open(stats_path, "r") as read_content:
 # flow_type = 'source'
 # flow_type = 'sourcedest'
 flow_type = 'conversation'
-flow_number = 12
+flow_number = 18
 
-flow_type = 'source'
-flow_number = 7
+# flow_type = 'source'
+# flow_number = 7
 
 key =stats_dict[flow_type]['list'][flow_number][1]
 
@@ -37,7 +38,8 @@ print (key)
 print (len(timevalues_dict[key]))
 
 use_tau = [TAU_01, TAU_1, TAU_10, TAU_100]
-
+#use_tau = [TAU_01, TAU_1]
+#use_tau = [TAU_10, TAU_100]
 
 my_times_list=[]
 my_count_val_list=[]
@@ -94,46 +96,87 @@ def plot_avg_len (tau_index_list, start, duration) :
                                         duration = duration)
         plt.plot(times, values)
 
+def plot_pkt_rate (tau_index_list, start, duration) :
+    for tau_index in tau_index_list :
+        times = my_times_list[tau_index]
+        values = my_count_val_list[tau_index]
+        values = np.divide(values, use_tau[tau_index])
+        times, values = ts_list.time_slice(times,values, start_time=start,
+                                        duration = duration)
+        plt.plot(times, values)
+
+
+def plot_bw (tau_index_list, start, duration) :
+    for tau_index in tau_index_list :
+        times = my_times_list[tau_index]
+        values = my_bw_values_list[tau_index]
+        times, values = ts_list.time_slice(times,values, start_time=start,
+                                        duration = duration)
+        plt.plot(times, values)
 
 
 # flow_type = 'conversation'
 # flow_number = 12
 # Adding labels and title
-plt.xlabel('Timestamp [s]')
-plt.ylabel('Number of packets')
-plt.title(r'Packet count in time window $\tau$')
-plot_count([0,1],10,30)
-plt.legend([r'$\tau$=0.1 [s]', r'$\tau$=1 [s]'],loc='upper right')
+# plt.xlabel('Timestamp [s]')
+# plt.ylabel('Number of packets')
+# plt.title(r'Packet count in time window $\tau$')
+# plot_count([0,1],10,30)
+# plt.legend([r'$\tau$=0.1 [s]', r'$\tau$=1 [s]'],loc='upper right')
 
+# # PLOT COUNT FOR DIFFERENT TAU
+# # Adding labels and title
+# plt.xlabel('Timestamp [s]')
+# plt.ylabel('Number of packets')
+# plt.title(r'Packet count in time window $\tau$')
+# #plt.ylim(bottom=0, top=140)
+# plot_count([2,3],90,20)
+# plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
+
+# # PLOT BW
+# # Adding labels and title
+# plt.xlabel('Timestamp [s]')
+# plt.ylabel('Bytes/s')
+# plt.title(r'Bandwidth in time window $\tau$')
+# #plt.ylim(bottom=0, top=140)
+# #plot_count([2,3],90,20)
+# plot_bw([2,3],70,50)
+# plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
+
+# PLOT PACKET RATE
 # Adding labels and title
 plt.xlabel('Timestamp [s]')
-plt.ylabel('Number of packets')
-plt.title(r'Packet count in time window $\tau$')
-plot_count([2,3],25,60)
+plt.ylabel('Pakets/s')
+plt.title(r'Packet rate in time window $\tau$')
+#plt.ylim(bottom=0, top=140)
+#plot_count([2,3],90,20)
+plot_pkt_rate([2,3],70,50)
 plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
 
-# flow_type = 'source'
-# flow_number = 7
-# Adding labels and title
-plt.xlabel('Timestamp [s]')
-plt.ylabel('Number of packets')
-plt.title(r'Packet count in time window $\tau$')
-plot_count([2,3],0,200)
-plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
 
-# Adding labels and title
-plt.xlabel('Timestamp [s]')
-plt.ylabel('Number of packets')
-plt.title(r'Packet count in time window $\tau$')
-plot_count([0,1],125,10)
-plt.legend([r'$\tau$=0.1 [s]', r'$\tau$=1 [s]'],loc='upper left')
 
-plt.xlabel('Timestamp [s]')
-plt.ylabel('Estimated pkt len [Bytes]')
-plt.title(r'Avg packet lenght in time window $\tau$')
-plt.ylim(bottom=0, top=150)
-plot_avg_len([2,3],0,200)
-#plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
+# # flow_type = 'source'
+# # flow_number = 7
+# # Adding labels and title
+# plt.xlabel('Timestamp [s]')
+# plt.ylabel('Number of packets')
+# plt.title(r'Packet count in time window $\tau$')
+# plot_count([2,3],0,200)
+# plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
+
+# # Adding labels and title
+# plt.xlabel('Timestamp [s]')
+# plt.ylabel('Number of packets')
+# plt.title(r'Packet count in time window $\tau$')
+# plot_count([0,1],125,10)
+# plt.legend([r'$\tau$=0.1 [s]', r'$\tau$=1 [s]'],loc='upper left')
+
+# plt.xlabel('Timestamp [s]')
+# plt.ylabel('Estimated pkt len [Bytes]')
+# plt.title(r'Avg packet lenght in time window $\tau$')
+# plt.ylim(bottom=0, top=150)
+# plot_avg_len([2,3],0,200)
+# #plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
 
 
 

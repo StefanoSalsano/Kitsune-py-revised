@@ -211,6 +211,7 @@ class incStat_cov:
             print("update_cov ID error")
             return ## error
 
+
         other_decay = 1
         my_timeDiff = t - self.incStats[not(inc)].lastTimestamp
         if my_timeDiff > 0:
@@ -343,6 +344,11 @@ class incStat_cov:
         self.w3 += 1
         self.lastRes[inc] = res
 
+        if ( ID == '192.168.2.101_192.168.2.110' and self.incStats[not(inc)].Lambda==0.01) :
+            print (ID)
+            print (self.CF3, self.w3, self.lastRes[inc], self.CF3 / self.w3)
+
+
         # print("w3",dadove, self.w3)
 
         #DEBUG
@@ -365,10 +371,12 @@ class incStat_cov:
         #     key = myid1+'_'+str(self.incStats[1-lower].Lambda)
         # else :
         #     key = myid2+'_'+str(self.incStats[1-lower].Lambda)
-        if myid1 in state.map2D :
-            key = myid1
-        else :
-            key = myid2
+
+        
+        #if myid1 in state.map2D :
+        #    key = myid1
+        #else :
+        #    key = myid2
         # if abs(self.w3 - state.map2D[key]['all'][0]) > 0.0000001 :
         #    print ('key',key,'Lambda',self.incStats[inc].Lambda,'compare w3 wrong',self.w3, state.map2D[key]['all'][0] )
         # if abs(self.CF3 - state.map2D[key]['all'][1]) > 0.0000001 :
