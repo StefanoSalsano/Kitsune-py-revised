@@ -3,6 +3,9 @@ import random
 import math
 import numpy as np
 
+TIMESLOT_DURATION = 100000*1000  # 0.1 second in nanoseconds
+LOG_SCALE_FACTOR = 20
+
 class TimestampedClass:
     def __init__(self, timestamp, value):
         self.timestamp = timestamp
@@ -10,8 +13,13 @@ class TimestampedClass:
         self.avg_bw_last_t_window = None
         self.avg_len_last_t_window = None
         self.count_last_t = None
-        self.ewma = None  #average packet size
-        self.ewma_rate = None
+        self.ewma = None  #average packet size???? no, byte counter
+        self.ewma_rate = None #packet counter
+        self.approx_pckt = 0
+        self.approx_bytes = 0
+        self.slot = 0  # slot number
+        self.pckt_in_slot = 0
+        self.bytes_in_slot = 0
 
     def get_timestamp(self):
         return self.timestamp
@@ -49,7 +57,41 @@ class TimestampedClass:
     def get_count_last_t(self):
         return self.count_last_t
 
+    def set_approx_pckt(self, approx_pckt):
+        self.approx_pckt = approx_pckt
 
+    def get_approx_pckt(self):
+        return self.approx_pckt
+
+    def set_approx_bytes(self, approx_bytes):
+        self.approx_bytes = approx_bytes
+
+    def get_approx_bytes(self):
+        return self.approx_bytes
+
+    def set_slot(self, slot):
+        self.slot = slot
+
+    def get_slot(self):
+        return self.slot
+
+    def set_pckt_in_slot(self, pckt_in_slot):
+        self.pckt_in_slot = pckt_in_slot
+
+    def get_pckt_in_slot(self):
+        return self.pckt_in_slot
+
+    def set_bytes_in_slot(self, bytes_in_slot):
+        self.bytes_in_slot = bytes_in_slot
+
+    def get_bytes_in_slot(self):
+        return self.bytes_in_slot
+
+
+def get_slot_from_time(time):
+    time_nano = time*1000000*1000
+    slot= int(time_nano/TIMESLOT_DURATION)
+    return slot
 
 class TimestampedList:
     def __init__(self):
@@ -157,35 +199,121 @@ class TimestampedList:
     #         else:
     #             self.timestamped_list[i].set_avg_last_t_window(0)  # Set average to 0 if no elements within the specified time range
 
-    def evaluate_ewma(self, tau, times = [], ewma_values=[], ewma_rate_values=[] ):
+
+
+
+    def evaluate_ewma(self, tau, times = [], ewma_bytes=[], ewma_pckt=[] ):
+        """
+        evaluate the packet rate
+        note that ewma_pckt and ewma_bytes are actually counters, 
+        which are then used to evaluate the rate dividing by tau
+        """
+
         if not self.timestamped_list:
             return
 
         self.timestamped_list[0].set_ewma(self.timestamped_list[0].get_value())
         self.timestamped_list[0].set_ewma_rate(1)
         times.append(self.timestamped_list[0].get_timestamp())
-        ewma_values.append (self.timestamped_list[0].get_value())
-        ewma_rate_values.append (1)
+        ewma_bytes.append (self.timestamped_list[0].get_value())
+        ewma_pckt.append (1)
 
         for i in range(1, len(self.timestamped_list)):
             value = self.timestamped_list[i].get_value()
             time = self.timestamped_list[i].get_timestamp()
+            slot = get_slot_from_time(time)
+            print (time, slot)
             prev_ewma = self.timestamped_list[i - 1].get_ewma()
             prev_ewma_rate = self.timestamped_list[i - 1].get_ewma_rate()
             prev_time = self.timestamped_list[i - 1].get_timestamp()
             decay = math.exp(-(time-prev_time)/tau)
             # ewma =  value/tau * (1-decay) + prev_ewma * decay
-            ewma =  value * (1-decay) + prev_ewma * decay
+            #ewma =  value * (1-decay) + prev_ewma * decay
+            ewma = value + decay * prev_ewma
             ewma_rate =  1 + prev_ewma_rate * decay
-            # if i >= 1700 and i <= 1703 :
-            #     print(i,decay, prev_ewma_rate, ewma_rate)
 
             self.timestamped_list[i].set_ewma(ewma)
             self.timestamped_list[i].set_ewma_rate(ewma_rate)
             times.append(time)
-            ewma_values.append (ewma)
-            ewma_rate_values.append (ewma_rate)
-    
+            ewma_bytes.append (ewma)
+            ewma_pckt.append (ewma_rate)
+
+    def eval_approx(self, tau, times = [], approx_bytes=[], approx_pckt=[] ):
+        """
+        approximate the packet and byte counters
+
+        """
+        def decay_table (delta) :
+            return [1048576,
+                    635993,
+                    385750,
+                    233969,
+                    141909,
+                    86072,
+                    52206,
+                    31664,
+                    19205,
+                    11649,
+                    7065,
+                    ][delta]
+
+        if not self.timestamped_list:
+            return
+
+        self.timestamped_list[0].set_approx_pckt(1)
+        self.timestamped_list[0].set_approx_bytes(self.timestamped_list[0].get_value())
+        slot = get_slot_from_time(self.timestamped_list[0].get_timestamp())
+        #self.timestamped_list[0].set_slot(slot)
+        pckt_in_slot = 1
+        bytes_in_slot = self.timestamped_list[0].get_value()
+
+        #self.timestamped_list[0].set_pckt_in_slot(1)
+        #self.timestamped_list[0].set_bytes_in_slot(self.timestamped_list[0].get_value())
+
+        times.append(self.timestamped_list[0].get_timestamp())
+        approx_pckt.append(1)
+        approx_bytes.append(self.timestamped_list[0].get_value())
+
+        for i in range(1, len(self.timestamped_list)):
+            value = self.timestamped_list[i].get_value()
+            time = self.timestamped_list[i].get_timestamp()
+            prev_approx_pckt = self.timestamped_list[i - 1].get_approx_pckt()
+            prev_approx_bytes = self.timestamped_list[i - 1].get_approx_bytes()
+
+            new_slot = get_slot_from_time(time)
+            if new_slot == slot:
+                # self.timestamped_list[i].set_slot(new_slot)
+                pckt_in_slot = pckt_in_slot + 1
+                bytes_in_slot = bytes_in_slot + value
+
+                self.timestamped_list[i].set_approx_pckt(prev_approx_pckt)
+                self.timestamped_list[i].set_approx_bytes(prev_approx_bytes)
+
+                approx_pckt.append(prev_approx_pckt)
+                approx_bytes.append(prev_approx_bytes)
+
+            else:
+                delta = new_slot - slot
+
+                avg = ((pckt_in_slot << 20 * decay_table(delta - 1)) >> 20 + 
+                         (prev_approx_pckt * decay_table(delta)) >> 20 )
+
+                self.timestamped_list[i].set_approx_pckt(avg)
+                approx_pckt.append(avg)
+
+                avg = ((bytes_in_slot << 20 * decay_table(delta - 1)) >> 20 +
+                            (prev_approx_bytes * decay_table(delta)) >> 20 )
+
+                self.timestamped_list[i].set_approx_bytes(avg)
+                approx_bytes.append(avg)
+
+                pckt_in_slot = 1
+                bytes_in_slot = value
+
+            times.append(time)
+
+
+
     def sample_and_hold(self,times = [], count=[], avg_len=[], bw=[] ) :
         """
         if count (t)= A and count(t+1) = B, then add a new point count(t+1) = A
@@ -201,13 +329,28 @@ class TimestampedList:
             bw.insert(i+1,bw[i])
             i += 2
 
+    def decay_values(self,tau=1,times = [], ewma_values=[], ewma_rate_values=[] ) :
+        """
+        if value (t)= A and value(t+1) = B, then add a new point 
+        value(t+1) = A*decay_factor((t+1)-t) 
+        for each point in the list
+        """
+        i = 0 
+        while (i < len(times)-1) :
+            decay = math.exp(-(times[i+1]-times[i])/tau)
+            next_time = times[i+1]
+            times.insert(i+1,next_time)
+            ewma_values.insert(i+1,ewma_values[i]*decay)
+            ewma_rate_values.insert(i+1,ewma_rate_values[i]*decay)
+            i += 2
+
     def time_slice(self, times = [], values = [], start_time=0.0, end_time=np.inf,
                    duration = np.inf, samples = np.inf) :
         out_times = []
         out_values = []
         if duration < np.inf :
             end_time = min(end_time,start_time+duration)
-            print (end_time)
+            #print (end_time)
         counter = 0
         for i in range(len(times)) :
             timestamp = times [i]
