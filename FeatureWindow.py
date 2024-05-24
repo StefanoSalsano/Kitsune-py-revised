@@ -4,7 +4,35 @@ import math
 import numpy as np
 
 TIMESLOT_DURATION = 100000*1000  # 0.1 second in nanoseconds
+TIMESLOT_DURATION = 5000000*1000  # 5 second in nanoseconds
+TIMESLOT_DURATION = 500000*1000  # 0.5 second in nanoseconds
+
 LOG_SCALE_FACTOR = 20
+MAX_DELTA = 10
+
+def scale (value) :
+    return value << LOG_SCALE_FACTOR
+
+def unscale (value) :
+    # return ((value+(1<<(LOG_SCALE_FACTOR-1)))  >> LOG_SCALE_FACTOR)
+    return (value >> LOG_SCALE_FACTOR)
+
+def evaluate_decay_table (tau, number_of_slots) :
+    decay_table = []
+    for i in range(number_of_slots):
+        decay = math.exp(-i*TIMESLOT_DURATION/tau)
+        decay_table.append(decay)
+    return decay_table
+
+def evaluate_exponential_fixed_point(k_max, tau_over_t, log_scale_factor):
+    results = []
+    for k in range(0, k_max + 1):
+        argument = k / tau_over_t
+        result = math.exp(-argument) << log_scale_factor
+        rounded_result = round(result)
+        results.append(rounded_result)
+    return results
+
 
 class TimestampedClass:
     def __init__(self, timestamp, value):
@@ -222,7 +250,7 @@ class TimestampedList:
             value = self.timestamped_list[i].get_value()
             time = self.timestamped_list[i].get_timestamp()
             slot = get_slot_from_time(time)
-            print (time, slot)
+            # print (time, slot)
             prev_ewma = self.timestamped_list[i - 1].get_ewma()
             prev_ewma_rate = self.timestamped_list[i - 1].get_ewma_rate()
             prev_time = self.timestamped_list[i - 1].get_timestamp()
@@ -241,6 +269,8 @@ class TimestampedList:
     def eval_approx(self, tau, times = [], approx_bytes=[], approx_pckt=[] ):
         """
         approximate the packet and byte counters
+        decay_table is a table of decay factors for each slot
+        decay_table[0] is never used
 
         """
         def decay_table (delta) :
@@ -260,8 +290,9 @@ class TimestampedList:
         if not self.timestamped_list:
             return
 
-        self.timestamped_list[0].set_approx_pckt(1)
-        self.timestamped_list[0].set_approx_bytes(self.timestamped_list[0].get_value())
+        #initialize estimate with 0
+        self.timestamped_list[0].set_approx_pckt(0)
+        self.timestamped_list[0].set_approx_bytes(0)
         slot = get_slot_from_time(self.timestamped_list[0].get_timestamp())
         #self.timestamped_list[0].set_slot(slot)
         pckt_in_slot = 1
@@ -271,12 +302,19 @@ class TimestampedList:
         #self.timestamped_list[0].set_bytes_in_slot(self.timestamped_list[0].get_value())
 
         times.append(self.timestamped_list[0].get_timestamp())
-        approx_pckt.append(1)
-        approx_bytes.append(self.timestamped_list[0].get_value())
+        approx_pckt.append(0)
+        approx_bytes.append(0)
 
         for i in range(1, len(self.timestamped_list)):
             value = self.timestamped_list[i].get_value()
             time = self.timestamped_list[i].get_timestamp()
+
+            flag = False
+            if (time - self.timestamped_list[0].get_timestamp() > 20.5 and 
+                time - self.timestamped_list[0].get_timestamp() < 45 ) :
+                # print (time - self.timestamped_list[0].get_timestamp())
+                flag = True
+
             prev_approx_pckt = self.timestamped_list[i - 1].get_approx_pckt()
             prev_approx_bytes = self.timestamped_list[i - 1].get_approx_bytes()
 
@@ -286,31 +324,57 @@ class TimestampedList:
                 pckt_in_slot = pckt_in_slot + 1
                 bytes_in_slot = bytes_in_slot + value
 
+                #if flag : print (pckt_in_slot)
+
                 self.timestamped_list[i].set_approx_pckt(prev_approx_pckt)
                 self.timestamped_list[i].set_approx_bytes(prev_approx_bytes)
 
                 approx_pckt.append(prev_approx_pckt)
                 approx_bytes.append(prev_approx_bytes)
 
+                # if flag : 
+                #     print ("prev_approx_pckt", prev_approx_pckt)
+
+
             else:
+                # new slot
                 delta = new_slot - slot
+                # print (pckt_in_slot, bytes_in_slot, delta)
+                # if flag : 
+                #     print ("new_slot",pckt_in_slot, unscale(prev_approx_pckt), delta)
+                if delta <= MAX_DELTA:
+                    # avg = (((((pckt_in_slot << LOG_SCALE_FACTOR) * decay_table(delta - 1))+(1 <<19) )>> LOG_SCALE_FACTOR) + 
+                    #         (((prev_approx_pckt * decay_table(delta)) >> LOG_SCALE_FACTOR)+(1 <<19) ) )
+                    avg = (unscale(scale(pckt_in_slot) * decay_table(delta - 1))  + 
+                           unscale(prev_approx_pckt * decay_table(delta)) )
 
-                avg = ((pckt_in_slot << 20 * decay_table(delta - 1)) >> 20 + 
-                         (prev_approx_pckt * decay_table(delta)) >> 20 )
+                    # if flag : 
+                    #     print ("AVG",avg, unscale(avg))
+                    self.timestamped_list[i].set_approx_pckt(avg)
+                    approx_pckt.append(avg)
+                    # avg_bytes = ((((bytes_in_slot << LOG_SCALE_FACTOR) * decay_table(delta - 1)) >> LOG_SCALE_FACTOR )+
+                    #             ((prev_approx_bytes * decay_table(delta)) >> LOG_SCALE_FACTOR) )
+                    avg_bytes = (unscale(scale(bytes_in_slot) * decay_table(delta - 1))  + 
+                                 unscale(prev_approx_bytes * decay_table(delta)) )
+                    
 
-                self.timestamped_list[i].set_approx_pckt(avg)
-                approx_pckt.append(avg)
+                    self.timestamped_list[i].set_approx_bytes(avg_bytes)
+                    #print (avg >> LOG_SCALE_FACTOR, avg_bytes >> LOG_SCALE_FACTOR)
+                    approx_bytes.append(avg)
 
-                avg = ((bytes_in_slot << 20 * decay_table(delta - 1)) >> 20 +
-                            (prev_approx_bytes * decay_table(delta)) >> 20 )
+                else: 
 
-                self.timestamped_list[i].set_approx_bytes(avg)
-                approx_bytes.append(avg)
+                    self.timestamped_list[i].set_approx_pckt(0)
+                    self.timestamped_list[i].set_approx_bytes(0)
+                    approx_pckt.append(0)
+                    approx_bytes.append(0)
 
                 pckt_in_slot = 1
                 bytes_in_slot = value
 
+
             times.append(time)
+            slot = new_slot
 
 
 

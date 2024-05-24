@@ -48,12 +48,21 @@ print (len(timevalues_dict[key]))
 # SELECTED = [0,1,2,3]
 # LEGEND = [r'$\tau$=0.1 [s]', r'$\tau$=1 [s]', r'$\tau$=10 [s]', r'$\tau$=100 [s]']
 
-# CONFIGURATION USED FOR rate_01_1_exact.png
+# # CONFIGURATION USED FOR rate_01_1_exact.png
+# START = 20
+# DURATION = 12
+# use_tau = [TAU_01, TAU_1]
+# SELECTED = [0,1]
+# LEGEND = [r'$\tau$=0.1 [s]', r'$\tau$=1 [s]']
+
 START = 20
-DURATION = 12
-use_tau = [TAU_01, TAU_1]
-SELECTED = [0,1]
-LEGEND = [r'$\tau$=0.1 [s]', r'$\tau$=1 [s]']
+DURATION = 40
+use_tau = [TAU_10]
+use_tau = [TAU_1]
+
+SELECTED = [0]
+LEGEND = [r'$\tau$=10 [s]']
+LEGEND = [r'$\tau$=1 [s]']
 
 
 
@@ -171,13 +180,19 @@ plt.xlabel('Timestamp [s]')
 # plot_pkt_rate(SELECTED,START,DURATION)
 # plt.legend(LEGEND,loc='upper left')
 
-# PLOT BW
-plt.ylabel('Rate [Bytes/s]')
-plt.title(r'Throughput in time window $\tau$ (EXACT)')
-#plt.ylim(bottom=0, top=140)
-plot_bw(SELECTED,START,DURATION)
-plt.legend(LEGEND,loc='upper left')
+# # PLOT BW
+# plt.ylabel('Rate [Bytes/s]')
+# plt.title(r'Throughput in time window $\tau$ (EXACT)')
+# #plt.ylim(bottom=0, top=140)
+# plot_bw(SELECTED,START,DURATION)
+# plt.legend(LEGEND,loc='upper left')
 
+# PLOT PACKET COUNT
+plt.ylabel('Packets')
+plt.title(r'Packets in time window $\tau$ (EXACT)')
+#plt.ylim(bottom=0, top=140)
+plot_count(SELECTED,START,DURATION)
+plt.legend(LEGEND,loc='upper left')
 
 
 # # flow_type = 'source'

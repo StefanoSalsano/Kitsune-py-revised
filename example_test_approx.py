@@ -60,10 +60,11 @@ use_tau = [TAU_10, TAU_100]
 
 use_tau = [TAU_01, TAU_1]
 use_tau = [TAU_10]
-use_tau = [TAU_1]
+use_tau = [TAU_01]
 
 START = 20
 DURATION = 40
+#LEGEND = [r'$\tau$=0.1 [s]', r'$\tau$=1 [s]']
 LEGEND = [r'$\tau$=10 [s]']
 LEGEND = [r'$\tau$=1 [s]']
 
@@ -92,8 +93,10 @@ def plot_pckt_count (start, duration) :
     for i in range (len(use_tau)) :
         times = np_ewma_times
         values = ewma_pckt_list[i]
+        values = np.divide(values, (1 << 20))
         times, values = timestamped_list.time_slice(times,values, start_time=start,
                                             duration = duration)
+        
         plt.plot(times, values)
 
 
@@ -114,8 +117,9 @@ for i in range (len(use_tau)) :
 
     ewma_bytes_list.append(new_list_bytes)
     ewma_pckt_list.append(new_list)
-    timestamped_list.evaluate_ewma(use_tau[i], times=ewma_times, ewma_bytes=new_list_bytes, ewma_pckt=new_list)
-    # timestamped_list.decay_values(use_tau[i], times=ewma_times, ewma_values=new_list_bytes, ewma_rate_values=new_list)
+    timestamped_list.eval_approx(use_tau[i], times=ewma_times, approx_bytes=new_list_bytes, approx_pckt=new_list)
+    #timestamped_list.decay_values(use_tau[i], times=ewma_times, ewma_values=new_list_bytes, ewma_rate_values=new_list)
+
 
 
 np_ewma_times = np.asarray(ewma_times)
@@ -153,8 +157,8 @@ for i in range (len(use_tau)) :
 # PLOT PACKET COUNT
 plot_pckt_count(START, DURATION)
 plt.xlabel('Timestamp [s]')
-plt.ylabel('Packet count [packets]')
-plt.title(r'Packets in time window $\tau$ (EWMA)')
+plt.ylabel('Packets')
+plt.title(r'Packets in time window $\tau$ (approx)')
 plt.legend(LEGEND,loc='upper left')
 
 
