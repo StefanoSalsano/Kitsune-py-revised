@@ -1,3 +1,7 @@
+"""
+read the json file with the time values and create a json file
+with the statistics
+"""
 import json
 #   warning: the following file is written by the script
 output_stats_path = "json_stats_ok_all.json"

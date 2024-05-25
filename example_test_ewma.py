@@ -61,11 +61,19 @@ use_tau = [TAU_10, TAU_100]
 use_tau = [TAU_01, TAU_1]
 use_tau = [TAU_10]
 use_tau = [TAU_1]
+use_tau = [TAU_10, TAU_100]
 
 START = 20
+START = 0
 DURATION = 40
+DURATION = 420
 LEGEND = [r'$\tau$=10 [s]']
 LEGEND = [r'$\tau$=1 [s]']
+LEGEND = [r'$\tau$=10 [s]', r'$\tau$=100 [s]']
+
+PLOT_TYPE = 'pckt_count'
+PLOT_TYPE = 'bw'
+PLOT_TYPE = 'pckt_rate'
 
 
 def plot_pkt_rate (start, duration) :
@@ -135,27 +143,30 @@ for i in range (len(use_tau)) :
         #     T = - use_tau[i] * math.log(1.0 - 1.0/w)
         #     new_list.append(1/T)
 
-# # PLOT PACKET RATE
-# plot_pkt_rate(START, DURATION)
-# plt.xlabel('Timestamp [s]')
-# plt.ylabel('Pakets/s')
-# plt.title(r'Packet rate in time window $\tau$ (EWMA)')
-# plt.legend(LEGEND,loc='upper left')
+# PLOT PACKET RATE
+if PLOT_TYPE == 'pckt_rate' :
+    plot_pkt_rate(START, DURATION)
+    plt.xlabel('Timestamp [s]')
+    plt.ylabel('Pakets/s')
+    plt.title(r'Packet rate in time window $\tau$ (EWMA)')
+    plt.legend(LEGEND,loc='upper left')
 
-# # PLOT BW
-# plot_bw(START, DURATION)
-# plt.xlabel('Timestamp [s]')
-# plt.ylabel('Rate [Bytes/s]')
-# plt.title(r'Throughput in time window $\tau$ (EWMA)')
-# plt.legend(LEGEND,loc='upper left')
+# PLOT BW
+if PLOT_TYPE == 'bw' :
+    plot_bw(START, DURATION)
+    plt.xlabel('Timestamp [s]')
+    plt.ylabel('Rate [Bytes/s]')
+    plt.title(r'Throughput in time window $\tau$ (EWMA)')
+    plt.legend(LEGEND,loc='upper left')
 
 
 # PLOT PACKET COUNT
-plot_pckt_count(START, DURATION)
-plt.xlabel('Timestamp [s]')
-plt.ylabel('Packet count [packets]')
-plt.title(r'Packets in time window $\tau$ (EWMA)')
-plt.legend(LEGEND,loc='upper left')
+if PLOT_TYPE == 'pckt_count' :
+    plot_pckt_count(START, DURATION)
+    plt.xlabel('Timestamp [s]')
+    plt.ylabel('Packet count [packets]')
+    plt.title(r'Packets in time window $\tau$ (EWMA)')
+    plt.legend(LEGEND,loc='upper left')
 
 
 # timestamped_list.process_all(use_tau)

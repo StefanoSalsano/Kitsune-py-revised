@@ -72,7 +72,8 @@ LEGEND = [r'$\tau$=1 [s]']
 def plot_pkt_rate (start, duration) :
     for i in range (len(use_tau)) :
         times = np_ewma_times
-        values = rate_estimate_list[i]
+        values = ewma_pckt_list[i]
+        values = np.divide(values, (1 << 20))
         values = np.divide(values, use_tau[i])
         times, values = timestamped_list.time_slice(times,values, start_time=start,
                                             duration = duration)

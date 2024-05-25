@@ -26,8 +26,9 @@ with open(stats_path, "r") as read_content:
 
 flow_type = 'source'
 # flow_type = 'sourcedest'
-# flow_type = 'conversation'
+flow_type = 'conversation'
 flow_number = 1
+flow_number = 12
 
 # flow_type = 'source'
 # flow_number = 7
@@ -55,15 +56,28 @@ print (len(timevalues_dict[key]))
 # SELECTED = [0,1]
 # LEGEND = [r'$\tau$=0.1 [s]', r'$\tau$=1 [s]']
 
-START = 20
+START = 50
+START = 120
 DURATION = 40
+DURATION = 120
+DURATION = 10
+
 use_tau = [TAU_10]
 use_tau = [TAU_1]
+use_tau = [TAU_10, TAU_100]
+use_tau = [TAU_01, TAU_1]
+
 
 SELECTED = [0]
+SELECTED = [0,1]
 LEGEND = [r'$\tau$=10 [s]']
 LEGEND = [r'$\tau$=1 [s]']
+LEGEND = [r'$\tau$=10 [s]', r'$\tau$=100 [s]']
+LEGEND = [r'$\tau$=0.1 [s]', r'$\tau$=1 [s]']
 
+PLOT_TYPE = 'pckt_count'
+PLOT_TYPE = 'bw'
+PLOT_TYPE = 'pckt_rate'
 
 
 def plot_count (tau_index_list, start, duration) :
@@ -133,15 +147,6 @@ for i in range (len(use_tau)) :
     # np_times = np.asarray(my_times_list[i])
     # np_times = np_times - my_times_list[i][0]
 
-    # if i == 1 :
-    #     for j in range (len(my_count_val_list[i])) :
-    #         timestamp = my_times_list[i][j] 
-    #         boolean = timestamp > 4131 and timestamp < 4133
-    #         if boolean : print (timestamp, my_count_val_list[i][j])
-
-
-
-
 # flow_type = 'conversation'
 # flow_number = 12
 # Adding labels and title
@@ -160,39 +165,31 @@ for i in range (len(use_tau)) :
 # plot_count([2,3],90,20)
 # plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
 
-# # PLOT BW
-# # Adding labels and title
-# plt.xlabel('Timestamp [s]')
-# plt.ylabel('Bytes/s')
-# plt.title(r'Bandwidth in time window $\tau$')
-# #plt.ylim(bottom=0, top=140)
-# #plot_count([2,3],START,DURATION)
-# plot_bw([2,3],START,DURATION)
-# plt.legend([r'$\tau$=10 [s]', r'$\tau$=100 [s]'],loc='upper left')
-
 plt.xlabel('Timestamp [s]')
 
-# # PLOT PACKET RATE
-# # Adding labels and title
-# plt.ylabel('Pakets/s')
-# plt.title(r'Packet rate in time window $\tau$ (EXACT)')
-# #plt.ylim(bottom=0, top=140)
-# plot_pkt_rate(SELECTED,START,DURATION)
-# plt.legend(LEGEND,loc='upper left')
+# PLOT PACKET RATE
+if PLOT_TYPE == 'pckt_rate' :
+    plt.ylabel('Pakets/s')
+    plt.title(r'Packet rate in time window $\tau$ (EXACT)')
+    #plt.ylim(bottom=0, top=140)
+    plot_pkt_rate(SELECTED,START,DURATION)
+    plt.legend(LEGEND,loc='upper left') 
 
-# # PLOT BW
-# plt.ylabel('Rate [Bytes/s]')
-# plt.title(r'Throughput in time window $\tau$ (EXACT)')
-# #plt.ylim(bottom=0, top=140)
-# plot_bw(SELECTED,START,DURATION)
-# plt.legend(LEGEND,loc='upper left')
+# PLOT BW
+if PLOT_TYPE == 'bw' :
+    plt.ylabel('Rate [Bytes/s]')
+    plt.title(r'Throughput in time window $\tau$ (EXACT)')
+    #plt.ylim(bottom=0, top=140)
+    plot_bw(SELECTED,START,DURATION)
+    plt.legend(LEGEND,loc='upper left')
 
 # PLOT PACKET COUNT
-plt.ylabel('Packets')
-plt.title(r'Packets in time window $\tau$ (EXACT)')
-#plt.ylim(bottom=0, top=140)
-plot_count(SELECTED,START,DURATION)
-plt.legend(LEGEND,loc='upper left')
+if PLOT_TYPE == 'pckt_count' :
+    plt.ylabel('Packets')
+    plt.title(r'Packets in time window $\tau$ (EXACT)')
+    #plt.ylim(bottom=0, top=140)
+    plot_count(SELECTED,START,DURATION)
+    plt.legend(LEGEND,loc='upper left')
 
 
 # # flow_type = 'source'
