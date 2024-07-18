@@ -34,7 +34,7 @@ args = parser.parse_args()
 PATH_IN = args.i #the pcap, pcapng, or tsv file to process.
 PATH_OUT = args.o
 
-LIMIT = np.Inf #the number of packets to process
+LIMIT = np.inf #the number of packets to process
 
 
 i = 0
